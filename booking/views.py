@@ -61,7 +61,6 @@ class BookingViewSet(viewsets.ModelViewSet):
                     queryset = queryset.filter(booking_status__code__iexact=booking_status)
                 return queryset
             # No params → return empty queryset (optional security)
-            #return queryset.n
 
         # For retrieve/update/delete (by ID)
         return queryset.filter(user=self.request.user)
