@@ -10,4 +10,4 @@ class CityViewSet(viewsets.ModelViewSet):
     serializer_class = CitySerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [SearchFilter]
-    search_field = ["^name"]
+    search_fields = ["^name"]
