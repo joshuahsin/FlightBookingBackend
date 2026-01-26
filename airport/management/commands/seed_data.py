@@ -16,15 +16,22 @@ from payment.models import Payment
 from payment_status.models import PaymentStatus
 from seat.models import Seat
 from user.models import User
+from city.models import City
 
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
+        #CITIES
+        los_angeles = City.objects.create(name="Los Angeles", country="United States", time_zone="America/Los_Angeles")
+        new_york = City.objects.create(name="New York", country="United States", time_zone="America/New_York")
+        portland = City.objects.create(name="Portland", country="United States", time_zone="America/Los_Angeles")
+        denver = City.objects.create(name="Denver", country="United States", time_zone="America/Denver")
+
         #AIRPORTS
-        lax = Airport.objects.create(airport_code="LAX", airport_name="Los Angeles International Airport", time_zone="America/Los_Angeles")
-        lga = Airport.objects.create(airport_code="LGA", airport_name="Laguardia Airport", time_zone="America/New_York")
-        pdx = Airport.objects.create(airport_code="PDX", airport_name = "Portland International Airport", time_zone="America/Los_Angeles")
-        den = Airport.objects.create(airport_code="DEN", airport_name = "Denver International Airport", time_zone="America/Denver")
+        lax = Airport.objects.create(airport_code="LAX", airport_name="Los Angeles International Airport", city=los_angeles)
+        lga = Airport.objects.create(airport_code="LGA", airport_name="Laguardia Airport", city=new_york)
+        pdx = Airport.objects.create(airport_code="PDX", airport_name = "Portland International Airport", city=portland)
+        den = Airport.objects.create(airport_code="DEN", airport_name = "Denver International Airport", city=denver)
         print(Airport.objects.get_queryset())
 
         #FLIGHTS

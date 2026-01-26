@@ -12,6 +12,8 @@ class AirportViewSet(viewsets.ModelViewSet):
     serializer_class = AirportSerializer
     filter_backends = [SearchFilter]
     search_fields = [
-        "^code"   # prefix search (fast, ideal for airport codes)
+        "^airport_code",      # prefix search (fast, ideal for airport codes)
+        "airport_name",       # search by airport name
+        "city__name",         # search by city name
     ]
     permission_classes = [IsAdminOrReadOnly]
