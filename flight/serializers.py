@@ -17,9 +17,9 @@ class FlightSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_departure_date_time(self, obj):
-        tz = ZoneInfo(obj.departure_airport.time_zone)
+        tz = ZoneInfo(obj.departure_airport.city.time_zone)
         return obj.departure_date_time.astimezone(tz).isoformat()
 
     def get_arrival_date_time(self, obj):
-        tz = ZoneInfo(obj.arrival_airport.time_zone)
+        tz = ZoneInfo(obj.arrival_airport.city.time_zone)
         return obj.arrival_date_time.astimezone(tz).isoformat()
