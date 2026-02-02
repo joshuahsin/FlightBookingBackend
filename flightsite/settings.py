@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-67)3fc8a*(b^7hom)%@a(xggp@)kgl*i6k@gij_*p*p=$-6jv^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -70,7 +70,21 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Your Next.js frontend
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "origin",
+]
+
+# Required for cross-origin requests from frontend (Django 4.0+)
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
