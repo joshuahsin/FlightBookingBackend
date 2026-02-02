@@ -45,3 +45,28 @@ class IsAdminOrReadOnly(BasePermission):
             return True
 
         return request.user.is_authenticated and request.user.role == "admin"
+
+
+class UserPermission(BasePermission):
+    """
+    - Create: no auth required (anyone can register).
+    - List/Retrieve: authenticated; admin sees all, user sees only own (via get_queryset + object).
+    - Update/Delete: user can only act on own account; admin cannot edit or delete users.
+    """
+    message = "You do not have permission to perform this action."
+
+    def has_permission(self, request, view):
+        if view.action == "create":
+            return True
+        return request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        if view.action in ("retrieve",):
+            if request.user.role == "admin":
+                return True
+            return obj.id == request.user.id
+        if view.action in ("update", "partial_update", "destroy"):
+            if request.user.role == "admin":
+                return False
+            return obj.id == request.user.id
+        return False
