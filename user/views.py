@@ -97,31 +97,29 @@ class UserViewSet(viewsets.ModelViewSet):
                 {'detail': 'Token is required.', 'code': 'token_missing'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        # Token from secrets.token_urlsafe(32) is always 43 characters
+        token_decoded = unquote(token)
+        # Token from secrets.token_urlsafe(32) is always 43 characters (check after decoding).
+        # Length validation is done here only; frontend should send the token as-is from the URL.
         EXPECTED_TOKEN_LENGTH = 43
-        if len(token) != EXPECTED_TOKEN_LENGTH:
+        if len(token_decoded) != EXPECTED_TOKEN_LENGTH:
             return Response(
                 {
-                    'detail': f'Verification link appears truncated or invalid. Token must be {EXPECTED_TOKEN_LENGTH} characters (received {len(token)}). Use the full link from the email.',
+                    'detail': f'Verification link appears truncated or invalid. Token must be {EXPECTED_TOKEN_LENGTH} characters (received {len(token_decoded)}). Use the full link from the email.',
                     'code': 'invalid_token_length',
                     'expected_length': EXPECTED_TOKEN_LENGTH,
-                    'received_length': len(token),
+                    'received_length': len(token_decoded),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        token_decoded = unquote(token)
         try:
             pending = PendingRegistration.objects.get(token=token_decoded)
         except PendingRegistration.DoesNotExist:
-            try:
-                pending = PendingRegistration.objects.get(token=token)
-            except PendingRegistration.DoesNotExist:
                 payload = {
                     'detail': 'Invalid or expired link. If you already verified, try signing in.',
                     'code': 'invalid_token',
                 }
                 if settings.DEBUG:
-                    payload['token_length_received'] = len(token)
+                    payload['token_length_received'] = len(token_decoded)
                 return Response(payload, status=status.HTTP_400_BAD_REQUEST)
         if timezone.now() > pending.expires_at:
             pending.delete()
