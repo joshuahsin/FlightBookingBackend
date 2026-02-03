@@ -16,3 +16,20 @@ class User(AbstractUser):
         validators = [phone_validator],
         unique=True)
     preferred_contact_method = models.CharField(max_length=20, null=True)
+
+
+class PendingRegistration(models.Model):
+    """Temporary signup data until user verifies email. Deleted after verification."""
+    email = models.EmailField()
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    username = models.CharField(max_length=150)
+    password = models.CharField(max_length=128)  # temporary; hashed when User is created
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+    phone_number = models.CharField(max_length=16)
+    preferred_contact_method = models.CharField(max_length=20, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['-created_at']
