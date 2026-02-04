@@ -11,3 +11,4 @@ class CartItem(models.Model):
     cart = models.ForeignKey(to=Cart, on_delete=models.CASCADE)
     flight = models.ForeignKey(to=Flight, on_delete=models.CASCADE)
     fare = models.ForeignKey(to=Fare, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)

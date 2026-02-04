@@ -17,7 +17,7 @@ class CartViewSet(viewsets.ModelViewSet):
         return self.request.user.role == "admin"  # or role == "admin"
 
     def get_queryset(self):
-        if self.is_admin():
+        '''if self.is_admin():
             # Admin can see ALL carts
             queryset = super().get_queryset()
             params = self.request.query_params
@@ -28,10 +28,7 @@ class CartViewSet(viewsets.ModelViewSet):
             if last_name := params.get("last_name"):
                 queryset = queryset.filter(user__last_name__icontains=last_name)
 
-            if is_active := params.get("is_active"):
-                queryset = queryset.filter(is_active=is_active.lower() == "true")
-
-            return queryset
+            return queryset'''
 
         # Users only see their own carts
         return Cart.objects.filter(user=self.request.user, is_active=True)
@@ -39,11 +36,16 @@ class CartViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Admin cannot create carts
         if self.is_admin():
-            raise PermissionDenied("Admin cannot create a cart.")
+            raise PermissionDenied(
+                "Admin cannot create a cart. Only users with role 'user' can create carts."
+            )
 
-        # User can only create a cart if they don't already have an active one
-        if Cart.objects.filter(user=self.request.user, is_active=True).exists():
-            raise PermissionDenied("You already have an active cart.")
+        # User can only create one active cart at a time
+        existing = Cart.objects.filter(user=self.request.user, is_active=True).first()
+        if existing:
+            raise PermissionDenied(
+                f"You already have an active cart (id={existing.id}). Use that cart or deactivate it first."
+            )
 
         serializer.save(user=self.request.user)
 

@@ -10,13 +10,16 @@ from flight.serializers import FlightSerializer
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    cart = serializers.PrimaryKeyRelatedField(queryset=Cart.objects.all())
+    cart = serializers.PrimaryKeyRelatedField(
+        queryset=Cart.objects.all(),
+        required=False,
+    )
     flight = serializers.PrimaryKeyRelatedField(queryset=Flight.objects.all())
     fare = serializers.PrimaryKeyRelatedField(queryset=Fare.objects.all())
 
     class Meta:
         model = CartItem
-        fields = ['id', 'cart', 'flight', 'fare']
+        fields = ['id', 'cart', 'flight', 'fare', 'quantity']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
