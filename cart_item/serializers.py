@@ -10,10 +10,7 @@ from flight.serializers import FlightSerializer
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    cart = serializers.PrimaryKeyRelatedField(
-        queryset=Cart.objects.all(),
-        required=False,
-    )
+    cart = serializers.PrimaryKeyRelatedField(queryset=Cart.objects.all())
     flight = serializers.PrimaryKeyRelatedField(queryset=Flight.objects.all())
     fare = serializers.PrimaryKeyRelatedField(queryset=Fare.objects.all())
 

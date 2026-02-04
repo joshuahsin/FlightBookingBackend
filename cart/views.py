@@ -17,19 +17,6 @@ class CartViewSet(viewsets.ModelViewSet):
         return self.request.user.role == "admin"  # or role == "admin"
 
     def get_queryset(self):
-        '''if self.is_admin():
-            # Admin can see ALL carts
-            queryset = super().get_queryset()
-            params = self.request.query_params
-
-            if first_name := params.get("first_name"):
-                queryset = queryset.filter(user__first_name__icontains=first_name)
-
-            if last_name := params.get("last_name"):
-                queryset = queryset.filter(user__last_name__icontains=last_name)
-
-            return queryset'''
-
         # Users only see their own carts
         return Cart.objects.filter(user=self.request.user, is_active=True)
 
@@ -48,6 +35,11 @@ class CartViewSet(viewsets.ModelViewSet):
             )
 
         serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
+        if self.is_admin():
+            raise PermissionDenied("Admin cannot update a cart.")
+        serializer.save(user=self.request.user, is_active=True, updated_at=timezone.now())
 
     '''def perform_destroy(self, instance):
         # Users can only delete their own cart
