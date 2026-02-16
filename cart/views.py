@@ -18,7 +18,7 @@ class CartViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Users only see their own carts
-        return Cart.objects.filter(user=self.request.user, is_active=True)
+        return Cart.objects.select_related("user").filter(user=self.request.user, is_active=True)
 
     def perform_create(self, serializer):
         # Admin cannot create carts

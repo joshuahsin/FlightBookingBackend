@@ -19,14 +19,13 @@ class FareViewSet(viewsets.ModelViewSet):
     ]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        # Always prefetch both; serializer uses instance.flight and instance.cabin_class
+        queryset = super().get_queryset().select_related("flight", "cabin_class")
 
-        # Filter by flight id
         flight_id = self.request.query_params.get("flight_id")
         if flight_id:
             queryset = queryset.filter(flight_id=flight_id)
 
-        # Filter by cabin class name
         cabin_class_name = self.request.query_params.get("cabin_class")
         if cabin_class_name:
             queryset = queryset.filter(

@@ -17,3 +17,6 @@ class AirportViewSet(viewsets.ModelViewSet):
         "city__name",         # search by city name
     ]
     permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        return super().get_queryset().select_related("city")

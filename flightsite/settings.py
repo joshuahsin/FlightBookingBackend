@@ -29,6 +29,25 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False, # Important: keeps Django's default loggers enabled
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler', # Logs to the console (stdout)
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'level': 'DEBUG', # Sets the logging level to DEBUG for database operations
+            'handlers': ['console'],
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    }
+}
 
 # Application definition
 

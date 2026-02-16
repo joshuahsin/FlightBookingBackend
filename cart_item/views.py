@@ -14,8 +14,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Only return cart items that belong to the current user's carts
-        qs = CartItem.objects.filter(cart__user=self.request.user, cart__is_active=True)
-        return qs
+        return CartItem.objects.select_related("cart").filter(cart__user=self.request.user, cart__is_active=True)
 
     def perform_create(self, serializer):
         # User comes from the access token (request.user). Use their active cart.

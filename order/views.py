@@ -22,9 +22,10 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 
     def get_queryset(self):
+        queryset = Order.objects.select_related("user", "order_status")
         if self.is_admin():
-            return Order.objects.all()
-        return Order.objects.get_queryset().filter(user=self.request.user)
+            return queryset.all()
+        return queryset.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         if self.is_admin():

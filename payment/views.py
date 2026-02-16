@@ -17,9 +17,10 @@ class PaymentViewSet(viewsets.ModelViewSet):
         return self.request.user.role == "admin"
 
     def get_queryset(self):
+        queryset = Payment.objects.select_related("order", "payment_status")
         if self.is_admin() == False:
-            return Payment.objects.get_queryset().filter(order__user=self.request.user)
-        return Payment.objects.all()
+            return queryset.filter(order__user=self.request.user)
+        return queryset.all()
 
     def perform_create(self, serializer):
         if self.is_admin():

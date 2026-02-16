@@ -11,3 +11,6 @@ class SeatViewSet(viewsets.ModelViewSet):
     queryset = Seat.objects.all()
     serializer_class = SeatSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        return Seat.objects.select_related("flight", "cabin_class")
