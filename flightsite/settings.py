@@ -49,17 +49,22 @@ LOGGING = {
     }
 }
 
-# Redis cache: set REDIS_URL in env (e.g. redis://user:password@host:port).
-# Redis Labs TLS: use rediss:// and port from your Redis Labs dashboard if required.
+# Redis cache: set REDIS_URL in env.
+# Redis Labs: use rediss:// (TLS). Append ?ssl_cert_reqs=none if you get certificate errors.
 REDIS_URL = os.environ.get("REDIS_URL")
 if REDIS_URL:
+    # Redis Labs TLS often needs cert verification disabled; redis-py reads this from URL
+    if REDIS_URL.startswith("rediss://") and "ssl_cert_reqs" not in REDIS_URL:
+        REDIS_URL = REDIS_URL.rstrip("/") + "?ssl_cert_reqs=none"
+    redis_options = {"CLIENT_CLASS": "django_redis.client.DefaultClient"}
+    if REDIS_URL.startswith("rediss://"):
+        # Also pass through pool so SSL is used when django-redis builds from URL
+        redis_options["CONNECTION_POOL_KWARGS"] = {"ssl_cert_reqs": "none"}
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": REDIS_URL,
-            "OPTIONS": {
-                "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            },
+            "OPTIONS": redis_options,
             "KEY_PREFIX": "flightbooking",
         }
     }
