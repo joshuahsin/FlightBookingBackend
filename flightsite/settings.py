@@ -49,6 +49,27 @@ LOGGING = {
     }
 }
 
+# Redis cache: set REDIS_URL in env (e.g. redis://user:password@host:port).
+# Redis Labs TLS: use rediss:// and port from your Redis Labs dashboard if required.
+REDIS_URL = os.environ.get("REDIS_URL")
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+            "KEY_PREFIX": "flightbooking",
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+
 # Application definition
 
 INSTALLED_APPS = [

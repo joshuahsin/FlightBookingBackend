@@ -2,6 +2,7 @@ Django==6.0.1
 python-dotenv>=1.0.0
 psycopg2-binary>=2.9.0
 django-extensions==4.1
+django-redis>=5.4.0
 djangorestframework
 djangorestframework-simplejwt
 asgiref==3.11.0
