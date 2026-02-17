@@ -5,6 +5,8 @@ from fare.models import Fare
 from fare.serializers import FareSerializer
 from user.permissions import IsAdminOrReadOnly
 
+FARE_LIST_CACHE_TIMEOUT = 300
+FARE_LIST_CACHE_KEY = "flightbooking:fare_list"
 
 # Create your views here.
 

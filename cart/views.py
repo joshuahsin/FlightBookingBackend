@@ -1,46 +1,48 @@
 from django.core.cache import cache
-from django.shortcuts import render
+from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
 
 from cart.models import Cart
 from cart.serializers import CartSerializer
 from user.permissions import IsUserOrAdmin
 
 CART_LIST_CACHE_TIMEOUT = 300
-CART_LIST_CACHE_KEY = "flightbooking:cart_list"
+
 
 def _cart_list_cache_key(user_id):
     return f"flightbooking:cart_list:user_{user_id}"
 
-# Create your views here.
+
 class CartViewSet(viewsets.ModelViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
     permission_classes = [IsUserOrAdmin]
 
     def is_admin(self):
-        return self.request.user.role == "admin"  # or role == "admin"
-
-    def _invalidate_cart_list_cache(self):
-        cache.delete(AIRPORT_LIST_CACHE_KEY)
+        return self.request.user.role == "admin"
 
     def get_queryset(self):
-        # Users only see their own carts
-        cache_key = _cart_list_cache_key(self.request.user.id)
+        return Cart.objects.select_related("user").filter(user=self.request.user, is_active=True)
+
+    def list(self, request, *args, **kwargs):
+        if request.user.role == "admin":
+            raise PermissionDenied("Admin cannot view carts.")
+        cache_key = _cart_list_cache_key(request.user.id)
         cached = cache.get(cache_key)
         if cached is not None:
             response = Response(cached)
             response["X-Cache"] = "HIT"
             return response
-        cache.set(cache_key, response.data, CART_LIST_CACHE_TIMEOUT)
-        queryset = Cart.objects.select_related("user").filter(user=self.request.user, is_active=True)
-        serializer = self.get_serializer(queryset, many=True)
-        data = serializer.data
-        cache.set(CART_LIST_CACHE_KEY, data, CART_LIST_CACHE_TIMEOUT)
-        response = Response(data)
+        response = super().list(request, *args, **kwargs)
+        if response.status_code == 200:
+            cache.set(cache_key, response.data, CART_LIST_CACHE_TIMEOUT)
         response["X-Cache"] = "MISS"
         return response
+
+    def _invalidate_cart_list_cache(self, user_id):
+        cache.delete(_cart_list_cache_key(user_id))
 
     def perform_create(self, serializer):
         # Admin cannot create carts
@@ -57,16 +59,18 @@ class CartViewSet(viewsets.ModelViewSet):
             )
 
         serializer.save(user=self.request.user)
-        self._invalidate_cart_list_cache()
+        self._invalidate_cart_list_cache(self.request.user.id)
 
     def perform_update(self, serializer):
         if self.is_admin():
             raise PermissionDenied("Admin cannot update a cart.")
+        instance = serializer.instance
         serializer.save(user=self.request.user, is_active=True, updated_at=timezone.now())
-        self._invalidate_cart_list_cache()
+        self._invalidate_cart_list_cache(instance.user_id)
 
     def perform_destroy(self, instance):
-        # Users can only delete their own cart
         if not self.is_admin() and instance.user != self.request.user:
             raise PermissionDenied("You do not have permission to delete this cart.")
+        user_id = instance.user_id
         instance.delete()
+        self._invalidate_cart_list_cache(user_id)
