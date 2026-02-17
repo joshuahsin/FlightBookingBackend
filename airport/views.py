@@ -25,6 +25,9 @@ class AirportViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return super().get_queryset().select_related("city")
 
+    def _invalidate_airport_list_cache(self):
+        cache.delete(AIRPORT_LIST_CACHE_KEY)
+
     def list(self, request, *args, **kwargs):
         # Only cache the full list; skip cache when ?search= is used
         if request.query_params.get("search", "").strip():
@@ -44,17 +47,14 @@ class AirportViewSet(viewsets.ModelViewSet):
         response["X-Cache"] = "MISS"
         return response
 
-    def _invalidate_list_cache(self):
-        cache.delete(AIRPORT_LIST_CACHE_KEY)
-
     def perform_create(self, serializer):
         super().perform_create(serializer)
-        self._invalidate_list_cache()
+        self._invalidate_airport_list_cache()
 
     def perform_update(self, serializer):
         super().perform_update(serializer)
-        self._invalidate_list_cache()
+        self._invalidate_airport_list_cache()
 
     def perform_destroy(self, instance):
         super().perform_destroy(instance)
-        self._invalidate_list_cache()
+        self._invalidate_airport_list_cache()

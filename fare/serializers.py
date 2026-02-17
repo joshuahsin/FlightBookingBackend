@@ -22,3 +22,14 @@ class FareSerializer(serializers.ModelSerializer):
         data['flight'] = FlightSerializer(instance.flight).data
         data['cabin_class'] = CabinClassSerializer(instance.cabin_class).data
         return data
+
+class FareEmbeddedSerializer(serializers.ModelSerializer):
+    cabin_class = CabinClassSerializer()
+    class Meta:
+        model = Fare
+        fields = ['id', 'cabin_class', 'fare_price']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['cabin_class'] = CabinClassSerializer(instance.cabin_class).data
+        return data

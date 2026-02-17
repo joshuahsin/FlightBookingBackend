@@ -33,8 +33,8 @@ class BookingViewSet(viewsets.ModelViewSet):
     def is_admin(self):
         return self.request.user.role == "admin"  # or role == "admin"
 
-    #def retrieve(self, request, pk=None):
-        #print("HEREEE")
+    def _invalidate_user_booking_list_cache(self, user_id):
+        cache.delete(_booking_list_cache_key(user_id))
 
     def get_queryset(self):
         # Admin users → full search
@@ -60,9 +60,6 @@ class BookingViewSet(viewsets.ModelViewSet):
             response["X-Cache"] = "MISS"
             return response
         return super().list(request, *args, **kwargs)
-
-    def _invalidate_user_booking_list_cache(self, user_id):
-        cache.delete(_booking_list_cache_key(user_id))
 
     def _optimized_queryset(self, queryset):
         # One query with JOINs; avoids N+1 when serializer accesses order, flight, user, passenger, seat, booking_status
