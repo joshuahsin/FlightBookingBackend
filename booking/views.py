@@ -1,13 +1,21 @@
-from random import random
+import string
+import random
 
+from django.core.cache import cache
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
 
 from booking.models import Booking
 from booking.serializers import BookingSerializer
 from user.permissions import IsUserOrAdmin
-import string
-import random
+
+BOOKING_LIST_CACHE_TIMEOUT = 300
+BOOKING_LIST_FILTER_PARAMS = ("confirmation_number", "last_name", "booking_status")
+
+
+def _booking_list_cache_key(user_id):
+    return f"flightbooking:booking_list:user_{user_id}"
 
 # Create your views here.
 class BookingViewSet(viewsets.ModelViewSet):
@@ -29,14 +37,32 @@ class BookingViewSet(viewsets.ModelViewSet):
         #print("HEREEE")
 
     def get_queryset(self):
-        print("get_queryset")
-
         # Admin users → full search
         if self.request.user.role == "admin":
             return self.admin_queryset()
 
         # Public users → restricted lookup
         return self.public_queryset()
+
+    def list(self, request, *args, **kwargs):
+        # Cache only when no filter params (plain "my bookings")
+        no_filters = not any(request.query_params.get(p) for p in BOOKING_LIST_FILTER_PARAMS)
+        if request.user.role != "admin" and no_filters:
+            cache_key = _booking_list_cache_key(request.user.id)
+            cached = cache.get(cache_key)
+            if cached is not None:
+                response = Response(cached)
+                response["X-Cache"] = "HIT"
+                return response
+            response = super().list(request, *args, **kwargs)
+            if response.status_code == 200:
+                cache.set(cache_key, response.data, BOOKING_LIST_CACHE_TIMEOUT)
+            response["X-Cache"] = "MISS"
+            return response
+        return super().list(request, *args, **kwargs)
+
+    def _invalidate_user_booking_list_cache(self, user_id):
+        cache.delete(_booking_list_cache_key(user_id))
 
     def _optimized_queryset(self, queryset):
         # One query with JOINs; avoids N+1 when serializer accesses order, flight, user, passenger, seat, booking_status
@@ -49,6 +75,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         if self.action == "list":
             params = self.request.query_params
+            # Filter params must match BOOKING_LIST_FILTER_PARAMS (used for cache key in list())
             confirmation = params.get("confirmation_number")
             last_name = params.get("last_name")
 
@@ -101,6 +128,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Admin cannot create a booking.")
         confirmation_number = self.generate_pnr()
         serializer.save(user=self.request.user, confirmation_number=confirmation_number)
+        self._invalidate_user_booking_list_cache(self.request.user.id)
 
     def perform_update(self, serializer):
         booking = self.get_object()
@@ -121,13 +149,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You may only update booking status")
 
         serializer.save()
+        self._invalidate_user_booking_list_cache(booking.user_id)
 
     def perform_destroy(self, instance):
-        booking = self.get_object()
-        if self.is_admin():
-            raise PermissionDenied("Admin cannot delete a booking.")
-
-        if booking.user != self.request.user:
-            raise PermissionDenied("Not your booking")
-
-        instance.delete()
+        raise PermissionDenied("Bookings cannot be deleted for archive purposes.")
