@@ -20,7 +20,6 @@ def _list_request_is_cacheable(request):
     return (
         q.get("flight_id")
         and not q.get("cabin_class")
-        and not q.get("search", "").strip()
     )
 
 

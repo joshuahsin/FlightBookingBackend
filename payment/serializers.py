@@ -4,7 +4,7 @@ from order.models import Order
 from payment.models import Payment
 from payment_status.models import PaymentStatus
 from payment_status.serializers import PaymentStatusEmbeddedSerializer
-
+from order.serializers import OrderSerializer
 
 class PaymentSerializer(serializers.ModelSerializer):
     order = serializers.PrimaryKeyRelatedField(
@@ -27,6 +27,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        data['order'] = OrderSerializer(instance.order).data
         data['payment_status'] = (
             PaymentStatusEmbeddedSerializer(instance.payment_status).data
             if instance.payment_status else None

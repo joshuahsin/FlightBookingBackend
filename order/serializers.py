@@ -10,7 +10,7 @@ from user.serializers import UserSerializer
 class OrderSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
-        allow_null=True
+        required=False,
     )
     order_status = serializers.PrimaryKeyRelatedField(
         queryset=OrderStatus.objects.all()

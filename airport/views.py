@@ -39,7 +39,7 @@ class AirportViewSet(viewsets.ModelViewSet):
             response["X-Cache"] = "HIT"
             return response
 
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         data = serializer.data
         cache.set(AIRPORT_LIST_CACHE_KEY, data, AIRPORT_LIST_CACHE_TIMEOUT)

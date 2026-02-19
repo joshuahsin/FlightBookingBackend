@@ -11,3 +11,11 @@ class Seat(models.Model):
     cabin_class = models.ForeignKey(CabinClass, on_delete=models.CASCADE)
     seat_number = models.CharField(max_length=3)
     occupied = models.BooleanField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['flight', 'seat_number'],
+                name='unique_seat_per_flight_cabin'
+            )
+        ]
