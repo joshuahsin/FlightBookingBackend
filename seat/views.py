@@ -1,4 +1,6 @@
+from django.core.cache import cache
 from rest_framework import viewsets
+from rest_framework.response import Response
 
 from seat.models import Seat
 from seat.serializers import SeatSerializer
@@ -6,9 +8,13 @@ from user.permissions import IsAdminOrReadOnly
 
 
 SEAT_LIST_CACHE_TIMEOUT = 300
+SEAT_LIST_FILTER_PARAMS = ["flight_id", "cabin_class"]
 
 def _seat_list_cache_key(flight_id, cabin_class):
     return f"flightbooking:seat_list:flight_{flight_id}:cabin_class_{cabin_class}"
+
+def _list_request_is_cacheable(request):
+    return all(request.query_params.get(p) for p in SEAT_LIST_FILTER_PARAMS)
 
 class SeatViewSet(viewsets.ModelViewSet):
     queryset = Seat.objects.all()
@@ -19,11 +25,12 @@ class SeatViewSet(viewsets.ModelViewSet):
         cache.delete(_seat_list_cache_key(flight_id, cabin_class))
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related("flight", "cabin_class")
-        if flight := self.request.query_params.get("flight"):
-            qs = qs.filter(flight=flight_id)
+        qs = super().get_queryset().select_related("flight__departure_airport__city", "flight__arrival_airport__city", "cabin_class")
+        if flight_id := self.request.query_params.get("flight_id"):
+            qs = qs.filter(flight__id=flight_id)
         if cabin_class := self.request.query_params.get("cabin_class"):
             qs = qs.filter(cabin_class__cabin_class_name__iexact=cabin_class)
+        
         return qs
     
     def list(self, request, *args, **kwargs):
