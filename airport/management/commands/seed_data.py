@@ -6,7 +6,6 @@ from booking.models import Booking
 from booking_status.models import BookingStatus
 from cabin_class.models import CabinClass
 from cart.models import Cart
-from cart_item.models import CartItem
 from flight.models import Flight
 from fare.models import Fare
 from order.models import Order
@@ -37,6 +36,7 @@ class Command(BaseCommand):
         #FLIGHTS
         lga_to_lax = Flight.objects.create(departure_airport=lga, arrival_airport=lax, departure_date_time="2026-01-16T15:30:00-05:00", arrival_date_time="2026-01-16T18:30:00-08:00")
         den_to_pdx = Flight.objects.create(departure_airport=den, arrival_airport=pdx, departure_date_time="2026-01-16T13:30:00-06:00", arrival_date_time="2026-01-16T15:30:00-05:00")
+        pdx_to_den = Flight.objects.create(departure_airport=pdx, arrival_airport=den, departure_date_time="2026-01-18T17:30:00-05:00", arrival_date_time="2026-01-18T19:30:00-06:00")
         print(Flight.objects.get_queryset())
 
         #CABIN_CLASS
@@ -53,6 +53,7 @@ class Command(BaseCommand):
         Fare.objects.create(flight=den_to_pdx, cabin_class=eco, fare_price=150, seats_available=70)
         Fare.objects.create(flight=den_to_pdx, cabin_class=prem_eco, fare_price=250, seats_available=30)
         bus_den_to_pdx_fare = Fare.objects.create(flight=den_to_pdx, cabin_class=bus, fare_price=450, seats_available=10)
+        bus_pdx_to_den_fare = Fare.objects.create(flight=pdx_to_den, cabin_class=bus, fare_price=500, seats_available=10)
         print(Fare.objects.get_queryset())
 
         #USER
@@ -133,11 +134,11 @@ class Command(BaseCommand):
         print(Payment.objects.get_queryset())
 
         #CART
-        john_cart = Cart.objects.create(user=john, is_active=True)
+        john_cart = Cart.objects.create(user=john, is_active=True, departure_flight=den_to_pdx, return_flight=pdx_to_den, departure_fare=bus_den_to_pdx_fare, return_fare=bus_pdx_to_den_fare)
         print(Cart.objects.get_queryset())
 
         #CART ITEM
-        CartItem.objects.create(cart=john_cart, flight=den_to_pdx, fare=bus_den_to_pdx_fare)
-        print(CartItem.objects.get_queryset())
+        #CartItem.objects.create(cart=john_cart, flight=den_to_pdx, fare=bus_den_to_pdx_fare)
+        #print(CartItem.objects.get_queryset())
 
         print("Successfully created all objects!")
