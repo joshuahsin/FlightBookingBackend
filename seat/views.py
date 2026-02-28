@@ -36,6 +36,8 @@ class SeatViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         if not _list_request_is_cacheable(request):
             return super().list(request, *args, **kwargs)
+        
+        print(request.query_params)
 
         flight_id = request.query_params.get("flight_id")
         cabin_class = request.query_params.get("cabin_class")

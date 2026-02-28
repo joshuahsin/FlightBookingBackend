@@ -1,11 +1,16 @@
+import string
+import random
+
 from django.core.cache import cache
-from django.shortcuts import render
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from order.serializers import OrderSerializer
 from order.models import Order
+from order.serializers import OrderSerializer
+from booking.serializers import BookingForOrderSerializer
 from user.permissions import IsUserOrAdmin
 
 ORDER_LIST_CACHE_TIMEOUT = 300
@@ -88,9 +93,48 @@ class OrderViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         if self.is_admin():
             raise PermissionDenied("Admin cannot create an order.")
-        serializer.save(user=self.request.user)
+        confirmation_number = self._generate_order_confirmation_number()
+        serializer.save(user=self.request.user, confirmation_number=confirmation_number)
         self._invalidate_order_list_cache(self.request.user.id)
         self._invalidate_admin_order_list_cache()
+
+    def _generate_order_confirmation_number(self):
+        while True:
+            chars = string.ascii_uppercase + string.digits
+            value = ''.join(random.choices(chars, k=6))
+            if not Order.objects.filter(confirmation_number=value).exists():
+                return value
+
+    @action(detail=False, methods=['get'], url_path='lookup', permission_classes=[AllowAny])
+    def lookup(self, request):
+        """Find order by confirmation_number + last_name; returns order with nested bookings."""
+        confirmation_number = request.query_params.get('confirmation_number')
+        last_name = request.query_params.get('last_name')
+        if not confirmation_number or not last_name:
+            return Response(
+                {'detail': 'confirmation_number and last_name are required.'},
+                status=400
+            )
+        order = (
+            Order.objects
+            .filter(confirmation_number__iexact=confirmation_number.strip())
+            .filter(bookings__passenger__last_name__iexact=last_name.strip())
+            .distinct()
+            .prefetch_related(
+                'bookings__flight',
+                'bookings__passenger',
+                'bookings__seat',
+                'bookings__booking_status',
+                'bookings__user',
+            )
+            .select_related('user', 'order_status')
+            .first()
+        )
+        if not order:
+            return Response({'detail': 'Order not found.'}, status=404)
+        data = OrderSerializer(order).data
+        data['bookings'] = BookingForOrderSerializer(order.bookings.all(), many=True).data
+        return Response(data)
 
     def perform_update(self, serializer):
         order = self.get_object()

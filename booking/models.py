@@ -11,10 +11,9 @@ from seat.models import Seat
 # Create your models here.
 class Booking(models.Model):
     id = models.BigAutoField(primary_key=True)
-    order = models.ForeignKey(to=Order, on_delete=models.CASCADE)
+    order = models.ForeignKey(to=Order, on_delete=models.CASCADE, related_name='bookings')
     flight = models.ForeignKey(to=Flight, on_delete=models.CASCADE)
     user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, default=None)
     passenger = models.ForeignKey(to=Passenger, on_delete=models.CASCADE)
-    confirmation_number = models.CharField(max_length=6, unique=True, db_index=True)
     seat = models.ForeignKey(to=Seat, on_delete=models.CASCADE)
     booking_status = models.ForeignKey(to=BookingStatus, on_delete=models.CASCADE)

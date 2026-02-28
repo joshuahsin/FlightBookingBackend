@@ -35,6 +35,7 @@ class Command(BaseCommand):
 
         #FLIGHTS
         lga_to_lax = Flight.objects.create(departure_airport=lga, arrival_airport=lax, departure_date_time="2026-01-16T15:30:00-05:00", arrival_date_time="2026-01-16T18:30:00-08:00")
+        lax_to_lga = Flight.objects.create(departure_airport=lax, arrival_airport=lga, departure_date_time="2026-01-19T20:30:00-08:00", arrival_date_time="2026-01-19T23:30:00-05:00")
         den_to_pdx = Flight.objects.create(departure_airport=den, arrival_airport=pdx, departure_date_time="2026-01-16T13:30:00-06:00", arrival_date_time="2026-01-16T15:30:00-05:00")
         pdx_to_den = Flight.objects.create(departure_airport=pdx, arrival_airport=den, departure_date_time="2026-01-18T17:30:00-05:00", arrival_date_time="2026-01-18T19:30:00-06:00")
         print(Flight.objects.get_queryset())
@@ -78,15 +79,38 @@ class Command(BaseCommand):
         print(BookingStatus.objects.get_queryset())
 
         #SEAT
-        lga_eco_seat1 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, seat_number="15C", occupied=False)
-        lga_eco_seat2 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, seat_number="15B", occupied=False)
-        Seat.objects.create(flight=lga_to_lax, cabin_class=prem_eco, seat_number="10B", occupied=True)
-        Seat.objects.create(flight=lga_to_lax, cabin_class=bus, seat_number="3B", occupied=True)
+        #lga_eco_seat1 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, seat_number="15C", occupied=False)
+        #lga_eco_seat2 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, seat_number="15B", occupied=False)
+        #Seat.objects.create(flight=lga_to_lax, cabin_class=prem_eco, seat_number="10B", occupied=True)
+        #Seat.objects.create(flight=lga_to_lax, cabin_class=bus, seat_number="3B", occupied=True)
 
-        den_eco_seat1 = Seat.objects.create(flight=den_to_pdx, cabin_class=eco, seat_number="20E", occupied=False)
-        den_eco_seat2 = Seat.objects.create(flight=den_to_pdx, cabin_class=eco, seat_number="20D", occupied=False)
-        Seat.objects.create(flight=den_to_pdx, cabin_class=prem_eco, seat_number="8C", occupied=True)
-        Seat.objects.create(flight=den_to_pdx, cabin_class=bus, seat_number="2A", occupied=True)
+        for row in range(1, 4):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.create(flight=lga_to_lax, cabin_class=bus, row_number=row, seat_letter=letter, occupied=False)
+        for row in range(4, 8):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.create(flight=lga_to_lax, cabin_class=prem_eco, row_number=row, seat_letter=letter, occupied=False)
+        for row in range(8, 21):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.create(flight=lga_to_lax, cabin_class=eco, row_number=row, seat_letter=letter, occupied=False)
+
+        for row in range(1, 4):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.create(flight=lax_to_lga, cabin_class=bus, row_number=row, seat_letter=letter, occupied=False)
+        for row in range(4, 8):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.create(flight=lax_to_lga, cabin_class=prem_eco, row_number=row, seat_letter=letter, occupied=False)
+        for row in range(8, 21):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.create(flight=lax_to_lga, cabin_class=eco, row_number=row, seat_letter=letter, occupied=False)
+
+        lga_eco_seat1 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, row_number=21, seat_letter="C", occupied=False)
+        lga_eco_seat2 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, row_number=21, seat_letter="B", occupied=False)
+
+        den_eco_seat1 = Seat.objects.create(flight=den_to_pdx, cabin_class=eco, row_number=20, seat_letter="E", occupied=False)
+        den_eco_seat2 = Seat.objects.create(flight=den_to_pdx, cabin_class=eco, row_number=20, seat_letter="D", occupied=False)
+        Seat.objects.create(flight=den_to_pdx, cabin_class=prem_eco, row_number=8, seat_letter="C", occupied=True)
+        Seat.objects.create(flight=den_to_pdx, cabin_class=bus, row_number=2, seat_letter="A", occupied=True)
         print(Seat.objects.get_queryset())
 
         #PASSENGER
@@ -108,17 +132,17 @@ class Command(BaseCommand):
 
         #ORDER
         #print(len("CONFIRMED"))
-        josh_order = Order.objects.create(user=josh, order_status=order_confirmed, total_amount=536.43)
-        george_order = Order.objects.create(user=george, order_status=order_confirmed, total_amount=846.34)
+        josh_order = Order.objects.create(user=josh, order_status=order_confirmed, total_amount=536.43, confirmation_number="JOSH01")
+        george_order = Order.objects.create(user=george, order_status=order_confirmed, total_amount=846.34, confirmation_number="GEO01")
         #john_order = Order.objects.create(user_id=john, order_status="PROCESSING_PAYMENT", total_amount=734.04)
         print(Order.objects.get_queryset())
 
         #BOOKING
-        Booking.objects.create(order=josh_order, flight=den_to_pdx, user=josh, passenger=josh_passenger, seat=den_eco_seat1, confirmation_number="A12F35", booking_status=checked_in)
-        Booking.objects.create(order=josh_order, flight=den_to_pdx, user=josh, passenger=kelly_passenger, seat=den_eco_seat2, confirmation_number="A12F36", booking_status=checked_in)
+        Booking.objects.create(order=josh_order, flight=den_to_pdx, user=josh, passenger=josh_passenger, seat=den_eco_seat1, booking_status=checked_in)
+        Booking.objects.create(order=josh_order, flight=den_to_pdx, user=josh, passenger=kelly_passenger, seat=den_eco_seat2, booking_status=checked_in)
 
-        Booking.objects.create(order=george_order, flight=lga_to_lax, user=george, passenger=george_passenger, seat=lga_eco_seat1, confirmation_number="A12F37", booking_status=ticketed)
-        Booking.objects.create(order=george_order, flight=lga_to_lax, user=george, passenger=kevin_passenger, seat=lga_eco_seat2, confirmation_number="A12F38", booking_status=ticketed)
+        Booking.objects.create(order=george_order, flight=lga_to_lax, user=george, passenger=george_passenger, seat=lga_eco_seat1, booking_status=ticketed)
+        Booking.objects.create(order=george_order, flight=lga_to_lax, user=george, passenger=kevin_passenger, seat=lga_eco_seat2, booking_status=ticketed)
         print(Booking.objects.get_queryset())
 
         #PAYMENT STATUS

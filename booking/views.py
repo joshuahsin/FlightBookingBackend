@@ -1,6 +1,3 @@
-import string
-import random
-
 from django.core.cache import cache
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
@@ -11,7 +8,7 @@ from booking.serializers import BookingSerializer
 from user.permissions import IsUserOrAdmin
 
 BOOKING_LIST_CACHE_TIMEOUT = 300
-BOOKING_LIST_FILTER_PARAMS = ("confirmation_number", "last_name", "booking_status")
+BOOKING_LIST_FILTER_PARAMS = ("booking_status",)
 
 
 def _booking_list_cache_key(user_id):
@@ -22,13 +19,6 @@ class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
     permission_classes = [IsUserOrAdmin]
-
-    def generate_pnr(self):
-        while True:
-            chars = string.ascii_uppercase + string.digits
-            chars = ''.join(random.choices(chars, k=6))
-            if not Booking.objects.filter(confirmation_number=chars).exists():
-                return chars
 
     def is_admin(self):
         return self.request.user.role == "admin"  # or role == "admin"
@@ -72,18 +62,8 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         if self.action == "list":
             params = self.request.query_params
-            # Filter params must match BOOKING_LIST_FILTER_PARAMS (used for cache key in list())
-            confirmation = params.get("confirmation_number")
-            last_name = params.get("last_name")
-
-            if confirmation and last_name:
-                return self._optimized_queryset(queryset).filter(
-                    confirmation_number__iexact=confirmation,
-                    passenger__last_name__iexact=last_name,
-                )
             queryset = self._optimized_queryset(queryset).filter(user=self.request.user)
             if booking_status := params.get("booking_status"):
-                # exact + normalized: lets DB use unique index on code (iexact can prevent that)
                 queryset = queryset.filter(
                     booking_status__code__exact=booking_status.strip().upper()
                 )
@@ -96,20 +76,20 @@ class BookingViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         params = self.request.query_params
 
-        if confirmation := params.get("confirmation_number"):
-            queryset = queryset.filter(confirmation_number__icontains=confirmation)
+        if order_cn := params.get("confirmation_number"):
+            queryset = queryset.filter(order__confirmation_number__iexact=order_cn)
 
         if first_name := params.get("first_name"):
-            queryset = queryset.filter(passenger__first_name__icontains=first_name)
+            queryset = queryset.filter(passenger__first_name__iexact=first_name)
 
         if last_name := params.get("last_name"):
-            queryset = queryset.filter(passenger__last_name__icontains=last_name)
+            queryset = queryset.filter(passenger__last_name__iexact=last_name)
 
         if status := params.get("booking_status"):
             queryset = queryset.filter(booking_status__code__iexact=status)
 
         if flight_number := params.get("flight_number"):
-            queryset = queryset.filter(flight__id__icontains=flight_number)
+            queryset = queryset.filter(flight__id__iexact=flight_number)
 
         if start_date := params.get("start_date"):
             queryset = queryset.filter(flight__departure_date_time__gte=start_date)
@@ -123,8 +103,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         # Admin cannot create bookings
         if self.is_admin():
             raise PermissionDenied("Admin cannot create a booking.")
-        confirmation_number = self.generate_pnr()
-        serializer.save(user=self.request.user, confirmation_number=confirmation_number)
+        serializer.save(user=self.request.user)
         self._invalidate_user_booking_list_cache(self.request.user.id)
 
     def perform_update(self, serializer):
