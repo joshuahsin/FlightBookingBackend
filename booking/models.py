@@ -13,7 +13,15 @@ class Booking(models.Model):
     id = models.BigAutoField(primary_key=True)
     order = models.ForeignKey(to=Order, on_delete=models.CASCADE, related_name='bookings')
     flight = models.ForeignKey(to=Flight, on_delete=models.CASCADE)
-    user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, default=None)
     passenger = models.ForeignKey(to=Passenger, on_delete=models.CASCADE)
     seat = models.ForeignKey(to=Seat, on_delete=models.CASCADE)
     booking_status = models.ForeignKey(to=BookingStatus, on_delete=models.CASCADE)
+    payment = models.ForeignKey(to=Payment, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
+
+    class Meta:
+    constraints = [
+        models.UniqueConstraint(
+            fields=['flight', 'passenger'],
+            name='unique_booking_per_flight_passenger'
+        )
+    ]

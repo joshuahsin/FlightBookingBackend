@@ -52,17 +52,18 @@ class BookingViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     def _optimized_queryset(self, queryset):
-        # One query with JOINs; avoids N+1 when serializer accesses order, flight, user, passenger, seat, booking_status
+        # One query with JOINs; avoids N+1 when serializer accesses order, flight, passenger, seat, booking_status
         return queryset.select_related(
-            "user", "order", "flight", "passenger", "seat", "booking_status"
+            "order", "flight", "passenger", "seat", "booking_status"
         )
 
     def public_queryset(self):
         queryset = super().get_queryset()
+        # "My bookings" = bookings whose order belongs to the current user (no Booking.user needed)
+        queryset = self._optimized_queryset(queryset).filter(order__user=self.request.user)
 
         if self.action == "list":
             params = self.request.query_params
-            queryset = self._optimized_queryset(queryset).filter(user=self.request.user)
             if booking_status := params.get("booking_status"):
                 queryset = queryset.filter(
                     booking_status__code__exact=booking_status.strip().upper()
@@ -70,7 +71,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             return queryset
 
         # retrieve / update / delete by ID
-        return self._optimized_queryset(queryset).filter(user=self.request.user)
+        return queryset
 
     def admin_queryset(self):
         queryset = super().get_queryset()
@@ -103,7 +104,8 @@ class BookingViewSet(viewsets.ModelViewSet):
         # Admin cannot create bookings
         if self.is_admin():
             raise PermissionDenied("Admin cannot create a booking.")
-        serializer.save(user=self.request.user)
+        serializer.save()
+        # Invalidate cache for the order owner (current user created the booking for their order)
         self._invalidate_user_booking_list_cache(self.request.user.id)
 
     def perform_update(self, serializer):
@@ -112,7 +114,8 @@ class BookingViewSet(viewsets.ModelViewSet):
         if self.is_admin():
             raise PermissionDenied("Admin cannot update a booking.")
 
-        if booking.user != self.request.user:
+        # Ownership via order: only the order owner can update this booking
+        if booking.order.user_id != self.request.user.id:
             raise PermissionDenied("Not your booking")
 
         if booking.booking_status.is_terminal == True:
@@ -125,7 +128,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You may only update booking status")
 
         serializer.save()
-        self._invalidate_user_booking_list_cache(booking.user_id)
+        # Invalidate cache for the order owner (no user on booking – use order.user_id)
+        self._invalidate_user_booking_list_cache(booking.order.user_id)
 
     def perform_destroy(self, instance):
         raise PermissionDenied("Bookings cannot be deleted for archive purposes.")

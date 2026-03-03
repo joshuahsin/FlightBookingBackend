@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from cabin_class.models import CabinClass
-from cabin_class.serializers import CabinClassSerializer
+from cabin_class.serializers import CabinClassEmbeddedSerializer
 from fare.models import Fare
 from flight.models import Flight
 from flight.serializers import FlightSerializer
@@ -20,16 +20,17 @@ class FareSerializer(serializers.ModelSerializer):
         """Output nested flight and cabin_class when reading."""
         data = super().to_representation(instance)
         data['flight'] = FlightSerializer(instance.flight).data
-        data['cabin_class'] = CabinClassSerializer(instance.cabin_class).data
+        data['cabin_class'] = CabinClassEmbeddedSerializer(instance.cabin_class).data
         return data
 
+
 class FareEmbeddedSerializer(serializers.ModelSerializer):
-    cabin_class = CabinClassSerializer()
+    cabin_class = CabinClassEmbeddedSerializer()
     class Meta:
         model = Fare
         fields = ['id', 'cabin_class', 'fare_price']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['cabin_class'] = CabinClassSerializer(instance.cabin_class).data
+        data['cabin_class'] = CabinClassEmbeddedSerializer(instance.cabin_class).data
         return data

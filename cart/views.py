@@ -51,12 +51,8 @@ class CartViewSet(viewsets.ModelViewSet):
                 "Admin cannot create a cart. Only users with role 'user' can create carts."
             )
 
-        # User can only create one active cart at a time
-        existing = Cart.objects.filter(user=self.request.user, is_active=True).first()
-        if existing:
-            raise PermissionDenied(
-                f"You already have an active cart (id={existing.id}). Use that cart or deactivate it first."
-            )
+        # Deactivate any other active carts so this user has only one active cart
+        Cart.objects.filter(user=self.request.user, is_active=True).update(is_active=False)
 
         serializer.save(user=self.request.user)
         self._invalidate_cart_list_cache(self.request.user.id)

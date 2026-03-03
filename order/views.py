@@ -125,7 +125,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 'bookings__passenger',
                 'bookings__seat',
                 'bookings__booking_status',
-                'bookings__user',
             )
             .select_related('user', 'order_status')
             .first()
