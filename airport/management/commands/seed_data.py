@@ -65,6 +65,7 @@ class Command(BaseCommand):
         print(User.objects.get_queryset())
 
         #BOOKING STATUS
+        BookingStatus.objects.create(code="CREATED", name="Created", description="Created", is_terminal=False)
         BookingStatus.objects.create(code="CONFIRMED", name="Confirmed", description="Confirmed booking", is_terminal=False)
         ticketed = BookingStatus.objects.create(code="TICKETED", name="Ticketed", description="Ticket given to user", is_terminal=False)
         checked_in = BookingStatus.objects.create(code="CHECKED_IN", name="Checked in", description="Passenger checked in", is_terminal=False)
@@ -138,11 +139,11 @@ class Command(BaseCommand):
         print(Order.objects.get_queryset())
 
         #BOOKING
-        Booking.objects.create(order=josh_order, flight=den_to_pdx, user=josh, passenger=josh_passenger, seat=den_eco_seat1, booking_status=checked_in)
-        Booking.objects.create(order=josh_order, flight=den_to_pdx, user=josh, passenger=kelly_passenger, seat=den_eco_seat2, booking_status=checked_in)
+        Booking.objects.create(order=josh_order, flight=den_to_pdx, passenger=josh_passenger, seat=den_eco_seat1, booking_status=checked_in)
+        Booking.objects.create(order=josh_order, flight=den_to_pdx, passenger=kelly_passenger, seat=den_eco_seat2, booking_status=checked_in)
 
-        Booking.objects.create(order=george_order, flight=lga_to_lax, user=george, passenger=george_passenger, seat=lga_eco_seat1, booking_status=ticketed)
-        Booking.objects.create(order=george_order, flight=lga_to_lax, user=george, passenger=kevin_passenger, seat=lga_eco_seat2, booking_status=ticketed)
+        Booking.objects.create(order=george_order, flight=lga_to_lax, passenger=george_passenger, seat=lga_eco_seat1, booking_status=ticketed)
+        Booking.objects.create(order=george_order, flight=lga_to_lax, passenger=kevin_passenger, seat=lga_eco_seat2, booking_status=ticketed)
         print(Booking.objects.get_queryset())
 
         #PAYMENT STATUS
@@ -152,8 +153,8 @@ class Command(BaseCommand):
         PaymentStatus.objects.create(code="REFUNDED", name="Refunded", description="Payment Refunded", is_terminal=True)
 
         #PAYMENT
-        Payment.objects.create(order=josh_order, amount=536.43, payment_method="CREDIT", payment_status=complete_payment, payment_date_time="2026-01-16T12:30:00-08:00")
-        Payment.objects.create(order=george_order, amount=846.34, payment_method="PAYPAL", payment_status=complete_payment, payment_date_time="2026-01-16T15:25:33-08:00")
+        Payment.objects.create(order=josh_order, amount=536.43, stripe_payment_session_id="cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6", payment_status=complete_payment)
+        Payment.objects.create(order=george_order, amount=846.34, stripe_payment_session_id="cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z7", payment_status=complete_payment)
         #Payment.objects.create(order_id=john_order, amount=734.04, payment_method="DEBIT", payment_status="PROCESSING")
         print(Payment.objects.get_queryset())
 

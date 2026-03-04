@@ -16,12 +16,11 @@ class Booking(models.Model):
     passenger = models.ForeignKey(to=Passenger, on_delete=models.CASCADE)
     seat = models.ForeignKey(to=Seat, on_delete=models.CASCADE)
     booking_status = models.ForeignKey(to=BookingStatus, on_delete=models.CASCADE)
-    payment = models.ForeignKey(to=Payment, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
 
     class Meta:
-    constraints = [
-        models.UniqueConstraint(
-            fields=['flight', 'passenger'],
-            name='unique_booking_per_flight_passenger'
-        )
-    ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['flight', 'passenger'],
+                name='unique_booking_per_flight_passenger'
+            )
+        ]
