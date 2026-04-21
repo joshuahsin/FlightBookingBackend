@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets
 
-from user.permissions import IsAdmin
+from user.permissions import IsAdmin, IsUserOrAdmin
 from .models import Passenger
 from .serializers import PassengerSerializer
 
@@ -11,4 +11,9 @@ from .serializers import PassengerSerializer
 class PassengerViewSet(viewsets.ModelViewSet):
     queryset = Passenger.objects.all()
     serializer_class = PassengerSerializer
-    permission_classes = [IsAdmin]
+
+    def get_permissions(self):
+        # Checkout: any logged-in user may POST; other actions stay admin-only.
+        if self.action == 'create':
+            return [IsUserOrAdmin()]
+        return [IsAdmin()]

@@ -8,6 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from booking.views import _booking_list_cache_key
 from order.models import Order
 from order.serializers import OrderSerializer
 from booking.serializers import BookingForOrderSerializer
@@ -97,6 +98,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user, confirmation_number=confirmation_number)
         self._invalidate_order_list_cache(self.request.user.id)
         self._invalidate_admin_order_list_cache()
+        cache.delete(_booking_list_cache_key(self.request.user.id))
 
     def _generate_order_confirmation_number(self):
         while True:
