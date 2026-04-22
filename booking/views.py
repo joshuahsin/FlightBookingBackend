@@ -139,3 +139,48 @@ class BookingViewSet(viewsets.ModelViewSet):
         self._invalidate_user_booking_list_cache(booking.order.user_id)
 
         return Response(BookingSerializer(booking, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'], url_path='check_in')
+    def check_in(self, request, pk=None):
+        booking = self.get_object()
+
+        if self.is_admin():
+            raise PermissionDenied("Admins cannot check in a booking.")
+
+        if booking.order.user_id != request.user.id:
+            raise PermissionDenied("Not your booking.")
+
+        if booking.booking_status.code != 'CONFIRMED':
+            raise PermissionDenied("Booking must be CONFIRMED to check in.")
+
+        checked_in_status = BookingStatus.objects.filter(code='CHECKED_IN').first()
+        if checked_in_status is None:
+            return Response({'detail': 'CHECKED_IN booking status not found.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        booking.booking_status = checked_in_status
+        booking.save()
+
+        self._invalidate_user_booking_list_cache(booking.order.user_id)
+
+        return Response(BookingSerializer(booking, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'], url_path='board')
+    def board(self, request, pk=None):
+        booking = self.get_object()
+
+        if not self.is_admin():
+            raise PermissionDenied("Only admins can board a booking.")
+
+        if booking.booking_status.code != 'CHECKED_IN':
+            raise PermissionDenied("Booking must be CHECKED_IN to board.")
+
+        boarded_status = BookingStatus.objects.filter(code='BOARDED').first()
+        if boarded_status is None:
+            return Response({'detail': 'BOARDED booking status not found.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        booking.booking_status = boarded_status
+        booking.save()
+
+        self._invalidate_user_booking_list_cache(booking.order.user_id)
+
+        return Response(BookingSerializer(booking, context={'request': request}).data)
