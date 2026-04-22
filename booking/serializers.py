@@ -17,7 +17,7 @@ class BookingForOrderSerializer(serializers.ModelSerializer):
     """Use when nesting bookings inside an order (avoids recursion)."""
     class Meta:
         model = Booking
-        fields = ['id', 'order', 'flight', 'passenger', 'seat', 'booking_status']
+        fields = ['id', 'order', 'flight', 'passenger', 'seat', 'booking_status', 'fare_price']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -43,7 +43,7 @@ class BookingSerializer(serializers.ModelSerializer):
         model = Booking
         fields = [
             'id', 'order', 'flight', 'passenger',
-            'seat', 'booking_status'
+            'seat', 'booking_status', 'fare_price'
         ]
 
     def to_representation(self, instance):
