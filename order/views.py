@@ -1,7 +1,10 @@
 import string
 import random
 
+import stripe
+from django.conf import settings
 from django.core.cache import cache
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -14,11 +17,10 @@ from order.models import Order
 from order.serializers import OrderSerializer
 from order_status.models import OrderStatus
 from booking.serializers import BookingForOrderSerializer
+from payment_status.models import PaymentStatus
 from user.permissions import IsUserOrAdmin
 
 ORDER_LIST_CACHE_TIMEOUT = 300
-ORDER_LIST_FILTER_PARAMS = ("user_id")
-ORDER_LIST_CACHE_KEY = "flightbooking:order_list"
 
 def _order_list_cache_key(user_id):
     return f"flightbooking:order_list:user_{user_id}"
@@ -34,64 +36,33 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def _invalidate_order_list_cache(self, user_id):
         cache.delete(_order_list_cache_key(user_id))
-    
-    def _invalidate_admin_order_list_cache(self):
-        cache.delete(_order_list_cache_key)
 
     def get_queryset(self):
-        queryset = Order.objects.select_related("user", "order_status")
-        if self.is_admin():
-            # Admin can filter by user_id via ?user_id=...
-            user_id = self.request.query_params.get("user_id")
-            if user_id:
-                queryset = queryset.filter(user_id=user_id)
-            return queryset
-        # Non-admin: only their own orders
-        return queryset.filter(user=self.request.user)
+        return Order.objects.none()
 
     def list(self, request, *args, **kwargs):
         if self.is_admin():
-            if "user_id" not in request.query_params:
-                cached = cache.get(ORDER_LIST_CACHE_KEY)
-                if cached is not None:
-                    response = Response(cached)
-                    response["X-Cache"] = "HIT"
-                    return response
-                queryset = self.get_queryset()
-                serializer = self.get_serializer(queryset, many=True)
-                data = serializer.data
-                cache.set(ORDER_LIST_CACHE_KEY, data, ORDER_LIST_CACHE_TIMEOUT)
-                response = Response(data)
-                response["X-Cache"] = "MISS"
-                return response
-            else:
-                cache_key = _order_list_cache_key(request.query_params.get("user_id"))
-                cached = cache.get(cache_key)
-                if cached is not None:
-                    response = Response(cached)
-                    response["X-Cache"] = "HIT"
-                    return response
-                queryset = self.get_queryset()
-                serializer = self.get_serializer(queryset, many=True)
-                data = serializer.data
-                cache.set(cache_key, data, ORDER_LIST_CACHE_TIMEOUT)
-                response = Response(data)
-                response["X-Cache"] = "MISS"
-                return response
-        else:
-            cache_key = _order_list_cache_key(self.request.user.id)
-            cached = cache.get(cache_key)
-            if cached is not None:
-                data = Response(cached)
-                data["X-Cache"] = "HIT"
-                return data
-            queryset = self.get_queryset()
+            if not request.query_params.get("email") and not request.query_params.get("confirmation_number"):
+                return Response({'detail': 'Provide at least one filter: email or confirmation_number.'}, status=400)
+            queryset = Order.objects.select_related("user", "order_status")
+            if email := request.query_params.get("email"):
+                queryset = queryset.filter(user__email__iexact=email.strip())
+            if confirmation_number := request.query_params.get("confirmation_number"):
+                queryset = queryset.filter(confirmation_number__iexact=confirmation_number.strip())
             serializer = self.get_serializer(queryset, many=True)
-            data = serializer.data
-            cache.set(cache_key, data, ORDER_LIST_CACHE_TIMEOUT)
-            response = Response(data)
-            response["X-Cache"] = "MISS"
+            return Response(serializer.data)
+        cache_key = _order_list_cache_key(request.user.id)
+        cached = cache.get(cache_key)
+        if cached is not None:
+            response = Response(cached)
+            response["X-Cache"] = "HIT"
             return response
+        queryset = Order.objects.select_related("user", "order_status").filter(user=request.user)
+        serializer = self.get_serializer(queryset, many=True)
+        cache.set(cache_key, serializer.data, ORDER_LIST_CACHE_TIMEOUT)
+        response = Response(serializer.data)
+        response["X-Cache"] = "MISS"
+        return response
 
     def perform_create(self, serializer):
         if self.is_admin():
@@ -99,7 +70,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         confirmation_number = self._generate_order_confirmation_number()
         serializer.save(user=self.request.user, confirmation_number=confirmation_number)
         self._invalidate_order_list_cache(self.request.user.id)
-        self._invalidate_admin_order_list_cache()
         cache.delete(_booking_list_cache_key(self.request.user.id))
 
     def _generate_order_confirmation_number(self):
@@ -147,12 +117,12 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='cancel')
     def cancel(self, request, pk=None):
-        order = self.get_object()
+        order = get_object_or_404(Order.objects.select_related('order_status'), pk=pk)
 
         if self.is_admin():
             raise PermissionDenied("Admin cannot cancel an order.")
 
-        if order.user != request.user:
+        if order.user_id != request.user.id:
             raise PermissionDenied("Not your order.")
 
         if order.order_status.is_terminal:
@@ -172,8 +142,42 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.bookings.filter(booking_status__is_terminal=False).update(booking_status=cancelled_booking_status)
 
         self._invalidate_order_list_cache(order.user_id)
-        self._invalidate_admin_order_list_cache()
         cache.delete(_booking_list_cache_key(order.user_id))
+
+        return Response(OrderSerializer(order).data)
+
+    @action(detail=True, methods=['post'], url_path='refund')
+    def refund(self, request, pk=None):
+        order = get_object_or_404(Order.objects.select_related('order_status'), pk=pk)
+
+        if not self.is_admin():
+            raise PermissionDenied("Only admins can issue refunds.")
+
+        if order.order_status.code != 'CANCELLED':
+            return Response({'detail': 'Order must be CANCELLED before it can be refunded.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        payment = order.payments.select_related('payment_status').filter(payment_status__code='PAID').first()
+        if payment is None:
+            return Response({'detail': 'No paid payment found for this order.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            stripe.Refund.create(payment_intent=payment.stripe_payment_session_id)
+        except stripe.error.StripeError as e:
+            return Response({'detail': f'Stripe refund failed: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
+
+        refunded_order_status = OrderStatus.objects.filter(code='REFUNDED').first()
+        refunded_payment_status = PaymentStatus.objects.filter(code='REFUNDED').first()
+
+        if refunded_order_status:
+            order.order_status = refunded_order_status
+            order.save()
+
+        if refunded_payment_status:
+            payment.payment_status = refunded_payment_status
+            payment.save()
+
+        self._invalidate_order_list_cache(order.user_id)
 
         return Response(OrderSerializer(order).data)
 
