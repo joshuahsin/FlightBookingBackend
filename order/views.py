@@ -2,15 +2,17 @@ import string
 import random
 
 from django.core.cache import cache
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from booking.views import _booking_list_cache_key
+from booking_status.models import BookingStatus
 from order.models import Order
 from order.serializers import OrderSerializer
+from order_status.models import OrderStatus
 from booking.serializers import BookingForOrderSerializer
 from user.permissions import IsUserOrAdmin
 
@@ -138,28 +140,42 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response(data)
 
     def perform_update(self, serializer):
-        order = self.get_object()
-
-        if self.is_admin():
-            raise PermissionDenied("Admin cannot update a order.")
-
-        if order.order_status.is_terminal == True:
-            raise PermissionDenied("The order is terminal.")
-        
-        if order.user != self.request.user:
-            raise PermissionDenied("Not your order")
-
-        allowed_fields = {"order_status"}
-        incoming_fields = set(serializer.validated_data.keys())
-
-        if not incoming_fields.issubset(allowed_fields):
-            raise PermissionDenied("You may only update order status")
-        serializer.save()
-        self._invalidate_order_list_cache(order.user_id)
-        self._invalidate_admin_order_list_cache()
+        raise PermissionDenied("Use the /cancel action to update an order.")
 
     def perform_destroy(self, instance):
         raise PermissionDenied("Orders cannot be destroyed for archive purposes.")
+
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel(self, request, pk=None):
+        order = self.get_object()
+
+        if self.is_admin():
+            raise PermissionDenied("Admin cannot cancel an order.")
+
+        if order.user != request.user:
+            raise PermissionDenied("Not your order.")
+
+        if order.order_status.is_terminal:
+            raise PermissionDenied("Order is already in a terminal state.")
+
+        cancelled_order_status = OrderStatus.objects.filter(code='CANCELLED').first()
+        if cancelled_order_status is None:
+            return Response({'detail': 'CANCELLED order status not found.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        cancelled_booking_status = BookingStatus.objects.filter(code='CANCELLED').first()
+        if cancelled_booking_status is None:
+            return Response({'detail': 'CANCELLED booking status not found.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        order.order_status = cancelled_order_status
+        order.save()
+
+        order.bookings.filter(booking_status__is_terminal=False).update(booking_status=cancelled_booking_status)
+
+        self._invalidate_order_list_cache(order.user_id)
+        self._invalidate_admin_order_list_cache()
+        cache.delete(_booking_list_cache_key(order.user_id))
+
+        return Response(OrderSerializer(order).data)
 
 
 

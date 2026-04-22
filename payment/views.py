@@ -77,11 +77,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         self._invalidate_payment_list_cache(order.user.id)
 
     def perform_update(self, serializer):
-        if self.is_admin():
-            raise PermissionDenied("You don't have permission to perform this action")
-        serializer.save()
-
-        self._invalidate_payment_list_cache(order.user.id)
+        raise PermissionDenied("Payment status cannot be updated directly.")
 
     def destroy(self, request, *args, **kwargs):
         raise PermissionDenied("Orders cannot be deleted for archive purposes.")

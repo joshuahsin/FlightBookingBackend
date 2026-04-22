@@ -65,18 +65,13 @@ class Command(BaseCommand):
         print(User.objects.get_queryset())
 
         #BOOKING STATUS
-        BookingStatus.objects.create(code="CREATED", name="Created", description="Created", is_terminal=False)
+        BookingStatus.objects.create(code="PENDING", name="Pending", description="Booking is pending confirmation", is_terminal=False)
         BookingStatus.objects.create(code="CONFIRMED", name="Confirmed", description="Confirmed booking", is_terminal=False)
-        ticketed = BookingStatus.objects.create(code="TICKETED", name="Ticketed", description="Ticket given to user", is_terminal=False)
         checked_in = BookingStatus.objects.create(code="CHECKED_IN", name="Checked in", description="Passenger checked in", is_terminal=False)
-        BookingStatus.objects.create(code="BOARDING", name="Boarding", description="Plane Boarding Time", is_terminal=False)
-        BookingStatus.objects.create(code="IN_FLIGHT", name="Flying", description="Plane is en route", is_terminal=False)
-        #BookingStatus.objects.create(code="SCHEDULE_CHANGE", name="Schedule Change", description="Plane departure and/or landing time changed", is_terminal=False)
-        #BookingStatus.objects.create(code="REFUND_PENDING", name="Refund Pending", description="User requested refund", is_terminal=False)
-
+        BookingStatus.objects.create(code="BOARDED", name="Boarded", description="Plane Boarding Time", is_terminal=False)
         BookingStatus.objects.create(code="COMPLETED", name="Flight Completed", description="Flight completed successfully", is_terminal=True)
-        BookingStatus.objects.create(code="NO_SHOW", name="No Show", description="Passenger did not board", is_terminal=True)
         BookingStatus.objects.create(code="CANCELLED", name="Cancelled", description="Flight was cancelled", is_terminal=True)
+        BookingStatus.objects.create(code="NO_SHOW", name="No Show", description="Passenger did not board", is_terminal=True)
         print(BookingStatus.objects.get_queryset())
 
         #SEAT
@@ -125,7 +120,6 @@ class Command(BaseCommand):
         #ORDER_STATUS
         order_created = OrderStatus.objects.create(code="CREATED", name="Created", description="Created", is_terminal=False)
         order_paid = OrderStatus.objects.create(code="PAID", name="Paid", description="Paid", is_terminal=False)
-        order_confirmed = OrderStatus.objects.create(code="CONFIRMED", name="Confirmed", description="Confirmed", is_terminal=False)
 
         order_failed = OrderStatus.objects.create(code="FAILED", name="Failed", description="Failed", is_terminal=True)
         order_cancelled = OrderStatus.objects.create(code="CANCELLED", name="Cancelled", description="Cancelled", is_terminal=True)
@@ -133,8 +127,8 @@ class Command(BaseCommand):
 
         #ORDER
         #print(len("CONFIRMED"))
-        josh_order = Order.objects.create(user=josh, order_status=order_confirmed, total_amount=536.43, confirmation_number="JOSH01")
-        george_order = Order.objects.create(user=george, order_status=order_confirmed, total_amount=846.34, confirmation_number="GEO01")
+        josh_order = Order.objects.create(user=josh, order_status=order_paid, total_amount=536.43, confirmation_number="JOSH01")
+        george_order = Order.objects.create(user=george, order_status=order_paid, total_amount=846.34, confirmation_number="GEO01")
         #john_order = Order.objects.create(user_id=john, order_status="PROCESSING_PAYMENT", total_amount=734.04)
         print(Order.objects.get_queryset())
 

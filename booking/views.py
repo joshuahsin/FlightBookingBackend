@@ -1,10 +1,12 @@
 from django.core.cache import cache
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from booking.models import Booking
 from booking.serializers import BookingSerializer
+from booking_status.models import BookingStatus
 from user.permissions import IsUserOrAdmin
 
 BOOKING_LIST_CACHE_TIMEOUT = 300
@@ -109,27 +111,31 @@ class BookingViewSet(viewsets.ModelViewSet):
         self._invalidate_user_booking_list_cache(self.request.user.id)
 
     def perform_update(self, serializer):
-        booking = self.get_object()
-
-        if self.is_admin():
-            raise PermissionDenied("Admin cannot update a booking.")
-
-        # Ownership via order: only the order owner can update this booking
-        if booking.order.user_id != self.request.user.id:
-            raise PermissionDenied("Not your booking")
-
-        if booking.booking_status.is_terminal == True:
-            raise PermissionDenied("Booking cannot be edited now")
-
-        allowed_fields = {"booking_status"}
-        incoming_fields = set(serializer.validated_data.keys())
-
-        if not incoming_fields.issubset(allowed_fields):
-            raise PermissionDenied("You may only update booking status")
-
-        serializer.save()
-        # Invalidate cache for the order owner (no user on booking – use order.user_id)
-        self._invalidate_user_booking_list_cache(booking.order.user_id)
+        raise PermissionDenied("Use the /cancel action to update a booking.")
 
     def perform_destroy(self, instance):
         raise PermissionDenied("Bookings cannot be deleted for archive purposes.")
+
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel(self, request, pk=None):
+        booking = self.get_object()
+
+        if self.is_admin():
+            raise PermissionDenied("Admin cannot cancel a booking.")
+
+        if booking.order.user_id != request.user.id:
+            raise PermissionDenied("Not your booking.")
+
+        if booking.booking_status.is_terminal:
+            raise PermissionDenied("Booking is already in a terminal state.")
+
+        cancelled_status = BookingStatus.objects.filter(code='CANCELLED').first()
+        if cancelled_status is None:
+            return Response({'detail': 'CANCELLED booking status not found.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        booking.booking_status = cancelled_status
+        booking.save()
+
+        self._invalidate_user_booking_list_cache(booking.order.user_id)
+
+        return Response(BookingSerializer(booking, context={'request': request}).data)
