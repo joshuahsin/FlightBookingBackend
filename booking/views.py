@@ -1,3 +1,5 @@
+import stripe
+from django.conf import settings
 from django.core.cache import cache
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -7,14 +9,15 @@ from rest_framework.response import Response
 from booking.models import Booking
 from booking.serializers import BookingSerializer
 from booking_status.models import BookingStatus
+from order_status.models import OrderStatus
+from payment_status.models import PaymentStatus
 from user.permissions import IsUserOrAdmin
+from flightsite.cache_keys import booking_list_cache_key as _booking_list_cache_key
+from flightsite.cache_keys import order_list_cache_key as _order_list_cache_key
+from flightsite.cache_keys import payment_list_cache_key as _payment_list_cache_key
 
 BOOKING_LIST_CACHE_TIMEOUT = 300
 BOOKING_LIST_FILTER_PARAMS = ("booking_status",)
-
-
-def _booking_list_cache_key(user_id):
-    return f"flightbooking:booking_list:user_{user_id}"
 
 # Create your views here.
 class BookingViewSet(viewsets.ModelViewSet):
@@ -137,6 +140,63 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.save()
 
         self._invalidate_user_booking_list_cache(booking.order.user_id)
+
+        return Response(BookingSerializer(booking, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'], url_path='refund')
+    def refund(self, request, pk=None):
+        booking = self.get_object()
+
+        if not self.is_admin():
+            raise PermissionDenied("Only admins can issue refunds.")
+
+        if booking.booking_status.code != 'CANCELLED':
+            return Response({'detail': 'Booking must be CANCELLED before it can be refunded.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        order = booking.order
+        payment = order.payments.select_related('payment_status').filter(payment_status__code='PAID').first()
+        if payment is None:
+            return Response({'detail': 'No paid payment found for this order.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            stripe.Refund.create(
+                payment_intent=payment.stripe_payment_session_id,
+                amount=int(booking.fare_price * 100),
+            )
+        except stripe.error.StripeError as e:
+            return Response({'detail': f'Stripe refund failed: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
+
+        refunded_payment_status = PaymentStatus.objects.filter(code='REFUNDED').first()
+        if refunded_payment_status:
+            payment.payment_status = refunded_payment_status
+            payment.save()
+
+        all_bookings = order.bookings.select_related('booking_status')
+        total = order.bookings.count()
+        refunded_count = all_bookings.filter(booking_status__code='REFUNDED').count()
+
+        if refunded_count == total:
+            new_order_status_code = 'REFUNDED'
+        elif refunded_count:
+            new_order_status_code = 'PARTIALLY_REFUNDED'
+        else:
+            new_order_status_code = None
+
+        if new_order_status_code:
+            new_order_status = OrderStatus.objects.filter(code=new_order_status_code).first()
+            if new_order_status:
+                order.order_status = new_order_status
+                order.save()
+
+        refunded_booking_status = BookingStatus.objects.filter(code='REFUNDED').first()
+        if refunded_booking_status:
+            booking.booking_status = refunded_booking_status
+            booking.save()
+
+        self._invalidate_user_booking_list_cache(order.user_id)
+        cache.delete(_order_list_cache_key(order.user_id))
+        cache.delete(_payment_list_cache_key(order.user_id))
 
         return Response(BookingSerializer(booking, context={'request': request}).data)
 

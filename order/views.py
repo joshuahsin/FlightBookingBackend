@@ -1,8 +1,6 @@
 import string
 import random
 
-import stripe
-from django.conf import settings
 from django.core.cache import cache
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
@@ -11,19 +9,16 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from booking.views import _booking_list_cache_key
 from booking_status.models import BookingStatus
 from order.models import Order
 from order.serializers import OrderSerializer
 from order_status.models import OrderStatus
 from booking.serializers import BookingForOrderSerializer
-from payment_status.models import PaymentStatus
 from user.permissions import IsUserOrAdmin
+from flightsite.cache_keys import booking_list_cache_key as _booking_list_cache_key
+from flightsite.cache_keys import order_list_cache_key as _order_list_cache_key
 
 ORDER_LIST_CACHE_TIMEOUT = 300
-
-def _order_list_cache_key(user_id):
-    return f"flightbooking:order_list:user_{user_id}"
 
 # Create your views here.
 class OrderViewSet(viewsets.ModelViewSet):
@@ -146,40 +141,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return Response(OrderSerializer(order).data)
 
-    @action(detail=True, methods=['post'], url_path='refund')
-    def refund(self, request, pk=None):
-        order = get_object_or_404(Order.objects.select_related('order_status'), pk=pk)
-
-        if not self.is_admin():
-            raise PermissionDenied("Only admins can issue refunds.")
-
-        if order.order_status.code != 'CANCELLED':
-            return Response({'detail': 'Order must be CANCELLED before it can be refunded.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        payment = order.payments.select_related('payment_status').filter(payment_status__code='PAID').first()
-        if payment is None:
-            return Response({'detail': 'No paid payment found for this order.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            stripe.api_key = settings.STRIPE_SECRET_KEY
-            stripe.Refund.create(payment_intent=payment.stripe_payment_session_id)
-        except stripe.error.StripeError as e:
-            return Response({'detail': f'Stripe refund failed: {str(e)}'}, status=status.HTTP_502_BAD_GATEWAY)
-
-        refunded_order_status = OrderStatus.objects.filter(code='REFUNDED').first()
-        refunded_payment_status = PaymentStatus.objects.filter(code='REFUNDED').first()
-
-        if refunded_order_status:
-            order.order_status = refunded_order_status
-            order.save()
-
-        if refunded_payment_status:
-            payment.payment_status = refunded_payment_status
-            payment.save()
-
-        self._invalidate_order_list_cache(order.user_id)
-
-        return Response(OrderSerializer(order).data)
 
 
 

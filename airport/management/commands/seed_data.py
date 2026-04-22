@@ -71,6 +71,7 @@ class Command(BaseCommand):
         BookingStatus.objects.create(code="BOARDED", name="Boarded", description="Plane Boarding Time", is_terminal=False)
         BookingStatus.objects.create(code="COMPLETED", name="Flight Completed", description="Flight completed successfully", is_terminal=True)
         BookingStatus.objects.create(code="CANCELLED", name="Cancelled", description="Flight was cancelled", is_terminal=True)
+        BookingStatus.objects.create(code="REFUNDED", name="Refunded", description="Booking was refunded", is_terminal=True)
         BookingStatus.objects.create(code="NO_SHOW", name="No Show", description="Passenger did not board", is_terminal=True)
         print(BookingStatus.objects.get_queryset())
 
@@ -123,6 +124,7 @@ class Command(BaseCommand):
 
         order_failed = OrderStatus.objects.create(code="FAILED", name="Failed", description="Failed", is_terminal=True)
         order_cancelled = OrderStatus.objects.create(code="CANCELLED", name="Cancelled", description="Cancelled", is_terminal=True)
+        OrderStatus.objects.create(code="PARTIALLY_REFUNDED", name="Partially Refunded", description="Partially Refunded", is_terminal=True)
         order_refunded = OrderStatus.objects.create(code="REFUNDED", name="Refunded", description="Refunded", is_terminal=True)
 
         #ORDER

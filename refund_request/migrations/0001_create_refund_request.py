@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('booking', '0003_add_fare_price_to_booking'),
-        ('order', '0003_create_refund_request'),
+        ('order', '0002_initial'),
     ]
 
     operations = [

@@ -8,18 +8,16 @@ from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
-from booking.views import _booking_list_cache_key
 from booking_status.models import BookingStatus
 from order_status.models import OrderStatus
 from payment.models import Payment
 from payment.serializers import PaymentSerializer
 from payment_status.models import PaymentStatus
 from user.permissions import IsUserOrAdmin
+from flightsite.cache_keys import booking_list_cache_key as _booking_list_cache_key
+from flightsite.cache_keys import payment_list_cache_key as _payment_list_cache_key
 
 PAYMENT_LIST_CACHE_TIMEOUT = 300
-
-def _payment_list_cache_key(user_id):
-    return f"flightbooking:payment_list:user_{user_id}"
 
 # Create your views here.
 class PaymentViewSet(viewsets.ModelViewSet):
