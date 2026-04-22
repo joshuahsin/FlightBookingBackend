@@ -101,6 +101,7 @@ INSTALLED_APPS = [
     'payment',
     'booking',
     'cart',
+    'refund_request',
 ]
 
 MIDDLEWARE = [
