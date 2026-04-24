@@ -57,9 +57,10 @@ def admin(db):
 
 
 @pytest.fixture
-def auth_client(api_client, user):
-    api_client.force_authenticate(user=user)
-    return api_client
+def auth_client(user):
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client
 
 
 @pytest.fixture
@@ -70,9 +71,10 @@ def other_auth_client(api_client, other_user):
 
 
 @pytest.fixture
-def admin_client(api_client, admin):
-    api_client.force_authenticate(user=admin)
-    return api_client
+def admin_client(admin):
+    client = APIClient()
+    client.force_authenticate(user=admin)
+    return client
 
 
 # --- Status fixtures ---
@@ -177,6 +179,20 @@ def cabin_class(db):
 @pytest.fixture
 def seat(db, flight, cabin_class):
     return Seat.objects.create(flight=flight, cabin_class=cabin_class, row_number=1, seat_letter='A', occupied=False)
+
+
+@pytest.fixture
+def seat2(db, flight, cabin_class):
+    return Seat.objects.create(flight=flight, cabin_class=cabin_class, row_number=1, seat_letter='B', occupied=False)
+
+
+@pytest.fixture
+def passenger2(db):
+    return Passenger.objects.create(
+        first_name='Jane',
+        last_name='Doe',
+        date_of_birth=date(1992, 6, 15),
+    )
 
 
 @pytest.fixture
