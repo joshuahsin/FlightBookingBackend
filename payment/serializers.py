@@ -34,18 +34,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         )
         return data
 
-    def validate(self, attrs):
-        print("ATTRS:", attrs)
-        return attrs
-
     def validate_order(self, order):
-        request = self.context["request"]
-        #print("request", request)
-        #print("order", order)
-        if order.user != request.user:
-            raise serializers.ValidationError(
-                "Order does not belong to you"
-            )
         if order.order_status.code in ["PAID", "CONFIRMED", "CANCELLED", "REFUNDED"]:
             raise serializers.ValidationError(
                 "Order has already been paid, cancelled, or refunded"

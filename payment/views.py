@@ -70,16 +70,25 @@ class PaymentViewSet(viewsets.ModelViewSet):
             else:
                 return super().list(request, *args, **kwargs)
 
-    def perform_create(self, serializer):
+    # validate that users can only create payments for their own orders, and admins cannot create payments at all
+    def create(self, request, *args, **kwargs):
         if self.is_admin():
             raise PermissionDenied("Admins cannot create payments")
+        order_id = request.data.get("order")
+        if order_id:
+            from order.models import Order
+            try:
+                order = Order.objects.get(pk=order_id)
+                if order.user != request.user:
+                    raise PermissionDenied("You cannot pay for another user's order")
+            except Order.DoesNotExist:
+                pass
+        return super().create(request, *args, **kwargs)
+
+    # Just creates the payment after validations
+    def perform_create(self, serializer):
         order = serializer.validated_data.get("order")
-
-        if order.user != self.request.user:
-            raise PermissionDenied("You cannot pay for another user's order")
-
         serializer.save()
-
         self._invalidate_payment_list_cache(order.user.id)
 
     def perform_update(self, serializer):
