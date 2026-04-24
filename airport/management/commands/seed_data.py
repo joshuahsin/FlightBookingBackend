@@ -1,7 +1,7 @@
 # your_app/management/commands/seed.py
 
 from django.core.management.base import BaseCommand
-from airport.models import Airport  # replace with your model
+from airport.models import Airport
 from booking.models import Booking
 from booking_status.models import BookingStatus
 from cabin_class.models import CabinClass
@@ -21,145 +21,117 @@ from city.models import City
 class Command(BaseCommand):
     def handle(self, *args, **options):
         #CITIES
-        los_angeles = City.objects.create(name="Los Angeles", country="United States", time_zone="America/Los_Angeles")
-        new_york = City.objects.create(name="New York", country="United States", time_zone="America/New_York")
-        portland = City.objects.create(name="Portland", country="United States", time_zone="America/Los_Angeles")
-        denver = City.objects.create(name="Denver", country="United States", time_zone="America/Denver")
+        los_angeles, _ = City.objects.get_or_create(name="Los Angeles", country="United States", defaults={"time_zone": "America/Los_Angeles"})
+        new_york, _ = City.objects.get_or_create(name="New York", country="United States", defaults={"time_zone": "America/New_York"})
+        portland, _ = City.objects.get_or_create(name="Portland", country="United States", defaults={"time_zone": "America/Los_Angeles"})
+        denver, _ = City.objects.get_or_create(name="Denver", country="United States", defaults={"time_zone": "America/Denver"})
 
         #AIRPORTS
-        lax = Airport.objects.create(airport_code="LAX", airport_name="Los Angeles International Airport", city=los_angeles)
-        lga = Airport.objects.create(airport_code="LGA", airport_name="Laguardia Airport", city=new_york)
-        pdx = Airport.objects.create(airport_code="PDX", airport_name = "Portland International Airport", city=portland)
-        den = Airport.objects.create(airport_code="DEN", airport_name = "Denver International Airport", city=denver)
-        print(Airport.objects.get_queryset())
+        lax, _ = Airport.objects.get_or_create(airport_code="LAX", defaults={"airport_name": "Los Angeles International Airport", "city": los_angeles})
+        lga, _ = Airport.objects.get_or_create(airport_code="LGA", defaults={"airport_name": "Laguardia Airport", "city": new_york})
+        pdx, _ = Airport.objects.get_or_create(airport_code="PDX", defaults={"airport_name": "Portland International Airport", "city": portland})
+        den, _ = Airport.objects.get_or_create(airport_code="DEN", defaults={"airport_name": "Denver International Airport", "city": denver})
+
+        #CABIN CLASS
+        eco, _ = CabinClass.objects.get_or_create(cabin_class_name="Economy", defaults={"baggage_allowance": 1, "refundable": False})
+        prem_eco, _ = CabinClass.objects.get_or_create(cabin_class_name="Premium Economy", defaults={"baggage_allowance": 2, "refundable": True})
+        bus, _ = CabinClass.objects.get_or_create(cabin_class_name="Business", defaults={"baggage_allowance": 3, "refundable": True})
 
         #FLIGHTS
-        lga_to_lax = Flight.objects.create(departure_airport=lga, arrival_airport=lax, departure_date_time="2026-01-16T15:30:00-05:00", arrival_date_time="2026-01-16T18:30:00-08:00")
-        lax_to_lga = Flight.objects.create(departure_airport=lax, arrival_airport=lga, departure_date_time="2026-01-19T20:30:00-08:00", arrival_date_time="2026-01-19T23:30:00-05:00")
-        den_to_pdx = Flight.objects.create(departure_airport=den, arrival_airport=pdx, departure_date_time="2026-01-16T13:30:00-06:00", arrival_date_time="2026-01-16T15:30:00-05:00")
-        pdx_to_den = Flight.objects.create(departure_airport=pdx, arrival_airport=den, departure_date_time="2026-01-18T17:30:00-05:00", arrival_date_time="2026-01-18T19:30:00-06:00")
-        print(Flight.objects.get_queryset())
-
-        #CABIN_CLASS
-        eco = CabinClass.objects.create(cabin_class_name="Economy", baggage_allowance=1, refundable=False)
-        prem_eco = CabinClass.objects.create(cabin_class_name="Premium Economy", baggage_allowance=2, refundable=True)
-        bus = CabinClass.objects.create(cabin_class_name="Business", baggage_allowance=3, refundable=True)
-        print(CabinClass.objects.get_queryset())
+        lga_to_lax, _ = Flight.objects.get_or_create(departure_airport=lga, arrival_airport=lax, departure_date_time="2026-01-16T15:30:00-05:00", defaults={"arrival_date_time": "2026-01-16T18:30:00-08:00"})
+        lax_to_lga, _ = Flight.objects.get_or_create(departure_airport=lax, arrival_airport=lga, departure_date_time="2026-01-19T20:30:00-08:00", defaults={"arrival_date_time": "2026-01-19T23:30:00-05:00"})
+        den_to_pdx, _ = Flight.objects.get_or_create(departure_airport=den, arrival_airport=pdx, departure_date_time="2026-01-16T13:30:00-06:00", defaults={"arrival_date_time": "2026-01-16T15:30:00-05:00"})
+        pdx_to_den, _ = Flight.objects.get_or_create(departure_airport=pdx, arrival_airport=den, departure_date_time="2026-01-18T17:30:00-05:00", defaults={"arrival_date_time": "2026-01-18T19:30:00-06:00"})
 
         #FARE
-        Fare.objects.create(flight=lga_to_lax, cabin_class=eco, fare_price=200, seats_available=70)
-        Fare.objects.create(flight=lga_to_lax, cabin_class=prem_eco, fare_price=300, seats_available=30)
-        Fare.objects.create(flight=lga_to_lax, cabin_class=bus, fare_price=500, seats_available=10)
-
-        Fare.objects.create(flight=den_to_pdx, cabin_class=eco, fare_price=150, seats_available=70)
-        Fare.objects.create(flight=den_to_pdx, cabin_class=prem_eco, fare_price=250, seats_available=30)
-        bus_den_to_pdx_fare = Fare.objects.create(flight=den_to_pdx, cabin_class=bus, fare_price=450, seats_available=10)
-        bus_pdx_to_den_fare = Fare.objects.create(flight=pdx_to_den, cabin_class=bus, fare_price=500, seats_available=10)
-        print(Fare.objects.get_queryset())
-
-        #USER
-        josh = User.objects.create_user(username="josh1234", password="awejgopejds", role="user", first_name="Joshua", last_name="Hsin", email="jhsin1@uci.edu", phone_number="+19112345679", preferred_contact_method="email")
-        george = User.objects.create_user(username="george123",password="uhiugyufyu", role="user", first_name="George", last_name="Hsin", email="georgehsin@gmail.com", phone_number="+19117355678", preferred_contact_method="text")
-        john = User.objects.create_user(username="john321", password="joiwejgoijwaes", role="user", first_name="John", last_name="Paul", email="johnpaul@hotmail.com", phone_number="+19112345673", preferred_contact_method="email")
-        User.objects.create_user(username="admin", password="admin", role="admin", first_name="admin", last_name="admin", email="admin@gmail.com")
-        print(User.objects.get_queryset())
+        Fare.objects.get_or_create(flight=lga_to_lax, cabin_class=eco, defaults={"fare_price": 200, "seats_available": 70})
+        Fare.objects.get_or_create(flight=lga_to_lax, cabin_class=prem_eco, defaults={"fare_price": 300, "seats_available": 30})
+        Fare.objects.get_or_create(flight=lga_to_lax, cabin_class=bus, defaults={"fare_price": 500, "seats_available": 10})
+        Fare.objects.get_or_create(flight=den_to_pdx, cabin_class=eco, defaults={"fare_price": 150, "seats_available": 70})
+        Fare.objects.get_or_create(flight=den_to_pdx, cabin_class=prem_eco, defaults={"fare_price": 250, "seats_available": 30})
+        bus_den_to_pdx_fare, _ = Fare.objects.get_or_create(flight=den_to_pdx, cabin_class=bus, defaults={"fare_price": 450, "seats_available": 10})
+        bus_pdx_to_den_fare, _ = Fare.objects.get_or_create(flight=pdx_to_den, cabin_class=bus, defaults={"fare_price": 500, "seats_available": 10})
 
         #BOOKING STATUS
-        BookingStatus.objects.create(code="PENDING", name="Pending", description="Booking is pending confirmation", is_terminal=False)
-        BookingStatus.objects.create(code="CONFIRMED", name="Confirmed", description="Confirmed booking", is_terminal=False)
-        checked_in = BookingStatus.objects.create(code="CHECKED_IN", name="Checked in", description="Passenger checked in", is_terminal=False)
-        BookingStatus.objects.create(code="BOARDED", name="Boarded", description="Plane Boarding Time", is_terminal=False)
-        BookingStatus.objects.create(code="COMPLETED", name="Flight Completed", description="Flight completed successfully", is_terminal=True)
-        BookingStatus.objects.create(code="CANCELLED", name="Cancelled", description="Flight was cancelled", is_terminal=True)
-        BookingStatus.objects.create(code="REFUNDED", name="Refunded", description="Booking was refunded", is_terminal=True)
-        BookingStatus.objects.create(code="NO_SHOW", name="No Show", description="Passenger did not board", is_terminal=True)
-        print(BookingStatus.objects.get_queryset())
+        BookingStatus.objects.get_or_create(code="PENDING", defaults={"name": "Pending", "description": "Booking is pending confirmation", "is_terminal": False})
+        confirmed, _ = BookingStatus.objects.get_or_create(code="CONFIRMED", defaults={"name": "Confirmed", "description": "Confirmed booking", "is_terminal": False})
+        checked_in, _ = BookingStatus.objects.get_or_create(code="CHECKED_IN", defaults={"name": "Checked in", "description": "Passenger checked in", "is_terminal": False})
+        BookingStatus.objects.get_or_create(code="BOARDED", defaults={"name": "Boarded", "description": "Plane Boarding Time", "is_terminal": False})
+        BookingStatus.objects.get_or_create(code="COMPLETED", defaults={"name": "Flight Completed", "description": "Flight completed successfully", "is_terminal": True})
+        BookingStatus.objects.get_or_create(code="CANCELLED", defaults={"name": "Cancelled", "description": "Flight was cancelled", "is_terminal": True})
+        BookingStatus.objects.get_or_create(code="REFUNDED", defaults={"name": "Refunded", "description": "Booking was refunded", "is_terminal": True})
+        BookingStatus.objects.get_or_create(code="NO_SHOW", defaults={"name": "No Show", "description": "Passenger did not board", "is_terminal": True})
 
-        #SEAT
-        #lga_eco_seat1 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, seat_number="15C", occupied=False)
-        #lga_eco_seat2 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, seat_number="15B", occupied=False)
-        #Seat.objects.create(flight=lga_to_lax, cabin_class=prem_eco, seat_number="10B", occupied=True)
-        #Seat.objects.create(flight=lga_to_lax, cabin_class=bus, seat_number="3B", occupied=True)
-
-        for row in range(1, 4):
-            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
-                Seat.objects.create(flight=lga_to_lax, cabin_class=bus, row_number=row, seat_letter=letter, occupied=False)
-        for row in range(4, 8):
-            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
-                Seat.objects.create(flight=lga_to_lax, cabin_class=prem_eco, row_number=row, seat_letter=letter, occupied=False)
-        for row in range(8, 21):
-            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
-                Seat.objects.create(flight=lga_to_lax, cabin_class=eco, row_number=row, seat_letter=letter, occupied=False)
-
-        for row in range(1, 4):
-            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
-                Seat.objects.create(flight=lax_to_lga, cabin_class=bus, row_number=row, seat_letter=letter, occupied=False)
-        for row in range(4, 8):
-            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
-                Seat.objects.create(flight=lax_to_lga, cabin_class=prem_eco, row_number=row, seat_letter=letter, occupied=False)
-        for row in range(8, 21):
-            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
-                Seat.objects.create(flight=lax_to_lga, cabin_class=eco, row_number=row, seat_letter=letter, occupied=False)
-
-        lga_eco_seat1 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, row_number=21, seat_letter="C", occupied=False)
-        lga_eco_seat2 = Seat.objects.create(flight=lga_to_lax, cabin_class=eco, row_number=21, seat_letter="B", occupied=False)
-
-        den_eco_seat1 = Seat.objects.create(flight=den_to_pdx, cabin_class=eco, row_number=20, seat_letter="E", occupied=False)
-        den_eco_seat2 = Seat.objects.create(flight=den_to_pdx, cabin_class=eco, row_number=20, seat_letter="D", occupied=False)
-        Seat.objects.create(flight=den_to_pdx, cabin_class=prem_eco, row_number=8, seat_letter="C", occupied=True)
-        Seat.objects.create(flight=den_to_pdx, cabin_class=bus, row_number=2, seat_letter="A", occupied=True)
-        print(Seat.objects.get_queryset())
-
-        #PASSENGER
-        josh_passenger = Passenger.objects.create(first_name="Joshua", last_name="Hsin", date_of_birth="1972-04-22", passport_number="E1450384")
-        george_passenger = Passenger.objects.create(first_name="George", last_name="Hsin", date_of_birth="1973-02-20", passport_number="E1450385")
-
-        kevin_passenger = Passenger.objects.create(first_name="Kevin", last_name="Nguyen", date_of_birth="1994-06-15", passport_number="E1450386")
-        kelly_passenger = Passenger.objects.create(first_name="Kelly", last_name="Tran", date_of_birth="1992-10-12", passport_number="E1450387")
-        print(Passenger.objects.get_queryset())
-
-        #ORDER_STATUS
-        order_created = OrderStatus.objects.create(code="CREATED", name="Created", description="Created", is_terminal=False)
-        order_paid = OrderStatus.objects.create(code="PAID", name="Paid", description="Paid", is_terminal=False)
-
-        order_failed = OrderStatus.objects.create(code="FAILED", name="Failed", description="Failed", is_terminal=True)
-        order_cancelled = OrderStatus.objects.create(code="CANCELLED", name="Cancelled", description="Cancelled", is_terminal=True)
-        OrderStatus.objects.create(code="PARTIALLY_REFUNDED", name="Partially Refunded", description="Partially Refunded", is_terminal=True)
-        order_refunded = OrderStatus.objects.create(code="REFUNDED", name="Refunded", description="Refunded", is_terminal=True)
-
-        #ORDER
-        #print(len("CONFIRMED"))
-        josh_order = Order.objects.create(user=josh, order_status=order_paid, total_amount=536.43, confirmation_number="JOSH01")
-        george_order = Order.objects.create(user=george, order_status=order_paid, total_amount=846.34, confirmation_number="GEO01")
-        #john_order = Order.objects.create(user_id=john, order_status="PROCESSING_PAYMENT", total_amount=734.04)
-        print(Order.objects.get_queryset())
-
-        #BOOKING
-        Booking.objects.create(order=josh_order, flight=den_to_pdx, passenger=josh_passenger, seat=den_eco_seat1, booking_status=checked_in)
-        Booking.objects.create(order=josh_order, flight=den_to_pdx, passenger=kelly_passenger, seat=den_eco_seat2, booking_status=checked_in)
-
-        Booking.objects.create(order=george_order, flight=lga_to_lax, passenger=george_passenger, seat=lga_eco_seat1, booking_status=ticketed)
-        Booking.objects.create(order=george_order, flight=lga_to_lax, passenger=kevin_passenger, seat=lga_eco_seat2, booking_status=ticketed)
-        print(Booking.objects.get_queryset())
+        #ORDER STATUS
+        order_created, _ = OrderStatus.objects.get_or_create(code="CREATED", defaults={"name": "Created", "description": "Created", "is_terminal": False})
+        order_paid, _ = OrderStatus.objects.get_or_create(code="PAID", defaults={"name": "Paid", "description": "Paid", "is_terminal": False})
+        OrderStatus.objects.get_or_create(code="FAILED", defaults={"name": "Failed", "description": "Failed", "is_terminal": True})
+        order_cancelled, _ = OrderStatus.objects.get_or_create(code="CANCELLED", defaults={"name": "Cancelled", "description": "Cancelled", "is_terminal": True})
+        OrderStatus.objects.get_or_create(code="PARTIALLY_REFUNDED", defaults={"name": "Partially Refunded", "description": "Partially Refunded", "is_terminal": True})
+        OrderStatus.objects.get_or_create(code="REFUNDED", defaults={"name": "Refunded", "description": "Refunded", "is_terminal": True})
 
         #PAYMENT STATUS
-        PaymentStatus.objects.create(code="PENDING", name="Pending", description="Payment Processing", is_terminal=False)
-        complete_payment = PaymentStatus.objects.create(code="COMPLETED", name="Completed", description="Payment Completed Successfully", is_terminal=False)
-        PaymentStatus.objects.create(code="FAILED", name="Failed", description="Payment Failed", is_terminal=True)
-        PaymentStatus.objects.create(code="REFUNDED", name="Refunded", description="Payment Refunded", is_terminal=True)
+        PaymentStatus.objects.get_or_create(code="PENDING", defaults={"name": "Pending", "description": "Payment Processing", "is_terminal": False})
+        complete_payment, _ = PaymentStatus.objects.get_or_create(code="COMPLETED", defaults={"name": "Completed", "description": "Payment Completed Successfully", "is_terminal": False})
+        PaymentStatus.objects.get_or_create(code="FAILED", defaults={"name": "Failed", "description": "Payment Failed", "is_terminal": True})
+        PaymentStatus.objects.get_or_create(code="REFUNDED", defaults={"name": "Refunded", "description": "Payment Refunded", "is_terminal": True})
+
+        #USER
+        josh, _ = User.objects.get_or_create(username="josh1234", defaults={"password": "awejgopejds", "role": "user", "first_name": "Joshua", "last_name": "Hsin", "email": "jhsin1@uci.edu", "phone_number": "+19112345679", "preferred_contact_method": "email"})
+        george, _ = User.objects.get_or_create(username="george123", defaults={"password": "uhiugyufyu", "role": "user", "first_name": "George", "last_name": "Hsin", "email": "georgehsin@gmail.com", "phone_number": "+19117355678", "preferred_contact_method": "text"})
+        john, _ = User.objects.get_or_create(username="john321", defaults={"password": "joiwejgoijwaes", "role": "user", "first_name": "John", "last_name": "Paul", "email": "johnpaul@hotmail.com", "phone_number": "+19112345673", "preferred_contact_method": "email"})
+        User.objects.get_or_create(username="admin", defaults={"password": "admin", "role": "admin", "first_name": "admin", "last_name": "admin", "email": "admin@gmail.com"})
+
+        #PASSENGER
+        josh_passenger, _ = Passenger.objects.get_or_create(first_name="Joshua", last_name="Hsin", date_of_birth="1972-04-22", defaults={"passport_number": "E1450384"})
+        george_passenger, _ = Passenger.objects.get_or_create(first_name="George", last_name="Hsin", date_of_birth="1973-02-20", defaults={"passport_number": "E1450385"})
+        kevin_passenger, _ = Passenger.objects.get_or_create(first_name="Kevin", last_name="Nguyen", date_of_birth="1994-06-15", defaults={"passport_number": "E1450386"})
+        kelly_passenger, _ = Passenger.objects.get_or_create(first_name="Kelly", last_name="Tran", date_of_birth="1992-10-12", defaults={"passport_number": "E1450387"})
+
+        #SEAT
+        for row in range(1, 4):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.get_or_create(flight=lga_to_lax, row_number=row, seat_letter=letter, defaults={"cabin_class": bus, "occupied": False})
+        for row in range(4, 8):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.get_or_create(flight=lga_to_lax, row_number=row, seat_letter=letter, defaults={"cabin_class": prem_eco, "occupied": False})
+        for row in range(8, 22):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.get_or_create(flight=lga_to_lax, row_number=row, seat_letter=letter, defaults={"cabin_class": eco, "occupied": False})
+
+        for row in range(1, 4):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.get_or_create(flight=lax_to_lga, row_number=row, seat_letter=letter, defaults={"cabin_class": bus, "occupied": False})
+        for row in range(4, 8):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.get_or_create(flight=lax_to_lga, row_number=row, seat_letter=letter, defaults={"cabin_class": prem_eco, "occupied": False})
+        for row in range(8, 21):
+            for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                Seat.objects.get_or_create(flight=lax_to_lga, row_number=row, seat_letter=letter, defaults={"cabin_class": eco, "occupied": False})
+
+        den_eco_seat1, _ = Seat.objects.get_or_create(flight=den_to_pdx, row_number=20, seat_letter="E", defaults={"cabin_class": eco, "occupied": False})
+        den_eco_seat2, _ = Seat.objects.get_or_create(flight=den_to_pdx, row_number=20, seat_letter="D", defaults={"cabin_class": eco, "occupied": False})
+        Seat.objects.get_or_create(flight=den_to_pdx, row_number=8, seat_letter="C", defaults={"cabin_class": prem_eco, "occupied": True})
+        Seat.objects.get_or_create(flight=den_to_pdx, row_number=2, seat_letter="A", defaults={"cabin_class": bus, "occupied": True})
+
+        lga_eco_seat1, _ = Seat.objects.get_or_create(flight=lga_to_lax, row_number=21, seat_letter="C", defaults={"cabin_class": eco, "occupied": False})
+        lga_eco_seat2, _ = Seat.objects.get_or_create(flight=lga_to_lax, row_number=21, seat_letter="B", defaults={"cabin_class": eco, "occupied": False})
+
+        #ORDER
+        josh_order, _ = Order.objects.get_or_create(confirmation_number="JOSH01", defaults={"user": josh, "order_status": order_paid, "total_amount": 536.43})
+        george_order, _ = Order.objects.get_or_create(confirmation_number="GEO01", defaults={"user": george, "order_status": order_paid, "total_amount": 846.34})
+
+        #BOOKING
+        Booking.objects.get_or_create(order=josh_order, flight=den_to_pdx, passenger=josh_passenger, defaults={"seat": den_eco_seat1, "booking_status": checked_in})
+        Booking.objects.get_or_create(order=josh_order, flight=den_to_pdx, passenger=kelly_passenger, defaults={"seat": den_eco_seat2, "booking_status": checked_in})
+        Booking.objects.get_or_create(order=george_order, flight=lga_to_lax, passenger=george_passenger, defaults={"seat": lga_eco_seat1, "booking_status": confirmed})
+        Booking.objects.get_or_create(order=george_order, flight=lga_to_lax, passenger=kevin_passenger, defaults={"seat": lga_eco_seat2, "booking_status": confirmed})
 
         #PAYMENT
-        Payment.objects.create(order=josh_order, amount=536.43, stripe_payment_session_id="cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6", payment_status=complete_payment)
-        Payment.objects.create(order=george_order, amount=846.34, stripe_payment_session_id="cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z7", payment_status=complete_payment)
-        #Payment.objects.create(order_id=john_order, amount=734.04, payment_method="DEBIT", payment_status="PROCESSING")
-        print(Payment.objects.get_queryset())
+        Payment.objects.get_or_create(stripe_payment_session_id="cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6", defaults={"order": josh_order, "amount": 536.43, "payment_status": complete_payment})
+        Payment.objects.get_or_create(stripe_payment_session_id="cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z7", defaults={"order": george_order, "amount": 846.34, "payment_status": complete_payment})
 
         #CART
-        john_cart = Cart.objects.create(user=john, is_active=True, departure_flight=den_to_pdx, return_flight=pdx_to_den, departure_fare=bus_den_to_pdx_fare, return_fare=bus_pdx_to_den_fare)
-        print(Cart.objects.get_queryset())
+        Cart.objects.get_or_create(user=john, defaults={"is_active": True, "departure_flight": den_to_pdx, "return_flight": pdx_to_den, "departure_fare": bus_den_to_pdx_fare, "return_fare": bus_pdx_to_den_fare})
 
-        #CART ITEM
-        #CartItem.objects.create(cart=john_cart, flight=den_to_pdx, fare=bus_den_to_pdx_fare)
-        #print(CartItem.objects.get_queryset())
-
-        print("Successfully created all objects!")
+        print("Successfully seeded all objects!")
