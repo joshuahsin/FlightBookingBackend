@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-67)3fc8a*(b^7hom)%@a(xggp@)kgl*i6k@gij_*p*p=$-6jv^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app', '.ngrok-free.dev']
 
 LOGGING = {
     'version': 1,
@@ -238,3 +238,6 @@ else:
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@flightbuddy.local')
 # Link base for verification email (no trailing slash)
 FRONTEND_VERIFY_EMAIL_URL = 'http://localhost:3000/verify-email'
+
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
