@@ -77,16 +77,20 @@ class Command(BaseCommand):
         PaymentStatus.objects.get_or_create(code="REFUNDED", defaults={"name": "Refunded", "description": "Payment Refunded", "is_terminal": True})
 
         #USER
-        josh, _ = User.objects.get_or_create(username="josh1234", defaults={"password": "awejgopejds", "role": "user", "first_name": "Joshua", "last_name": "Hsin", "email": "jhsin1@uci.edu", "phone_number": "+19112345679", "preferred_contact_method": "email"})
-        george, _ = User.objects.get_or_create(username="george123", defaults={"password": "uhiugyufyu", "role": "user", "first_name": "George", "last_name": "Hsin", "email": "georgehsin@gmail.com", "phone_number": "+19117355678", "preferred_contact_method": "text"})
-        john, _ = User.objects.get_or_create(username="john321", defaults={"password": "joiwejgoijwaes", "role": "user", "first_name": "John", "last_name": "Paul", "email": "johnpaul@hotmail.com", "phone_number": "+19112345673", "preferred_contact_method": "email"})
-        User.objects.get_or_create(username="admin", defaults={"password": "admin", "role": "admin", "first_name": "admin", "last_name": "admin", "email": "admin@gmail.com"})
+        josh, created = User.objects.get_or_create(username="josh1234", defaults={"role": "user", "first_name": "Joshua", "last_name": "Hsin", "email": "jhsin1@uci.edu", "phone_number": "+19112345679", "preferred_contact_method": "email"})
+        if created: josh.set_password("awejgopejds"); josh.save()
+        george, created = User.objects.get_or_create(username="george123", defaults={"role": "user", "first_name": "George", "last_name": "Hsin", "email": "georgehsin@gmail.com", "phone_number": "+19117355678", "preferred_contact_method": "text"})
+        if created: george.set_password("uhiugyufyu"); george.save()
+        john, created = User.objects.get_or_create(username="john321", defaults={"role": "user", "first_name": "John", "last_name": "Paul", "email": "johnpaul@hotmail.com", "phone_number": "+19112345673", "preferred_contact_method": "email"})
+        if created: john.set_password("joiwejgoijwaes"); john.save()
+        admin, created = User.objects.get_or_create(username="admin", defaults={"role": "admin", "first_name": "admin", "last_name": "admin", "email": "admin@gmail.com"})
+        if created: admin.set_password("admin"); admin.save()
 
         #PASSENGER
-        josh_passenger, _ = Passenger.objects.get_or_create(first_name="Joshua", last_name="Hsin", date_of_birth="1972-04-22", defaults={"passport_number": "E1450384"})
-        george_passenger, _ = Passenger.objects.get_or_create(first_name="George", last_name="Hsin", date_of_birth="1973-02-20", defaults={"passport_number": "E1450385"})
-        kevin_passenger, _ = Passenger.objects.get_or_create(first_name="Kevin", last_name="Nguyen", date_of_birth="1994-06-15", defaults={"passport_number": "E1450386"})
-        kelly_passenger, _ = Passenger.objects.get_or_create(first_name="Kelly", last_name="Tran", date_of_birth="1992-10-12", defaults={"passport_number": "E1450387"})
+        josh_passenger, _ = Passenger.objects.get_or_create(first_name="Joshua", last_name="Hsin", date_of_birth="1972-04-22", gender="Male", defaults={"passport_number": "E1450384"})
+        george_passenger, _ = Passenger.objects.get_or_create(first_name="George", last_name="Hsin", date_of_birth="1973-02-20", gender="Male", defaults={"passport_number": "E1450385"})
+        kevin_passenger, _ = Passenger.objects.get_or_create(first_name="Kevin", last_name="Nguyen", date_of_birth="1994-06-15", gender="Male", defaults={"passport_number": "E1450386"})
+        kelly_passenger, _ = Passenger.objects.get_or_create(first_name="Kelly", last_name="Tran", date_of_birth="1992-10-12", gender="Female", defaults={"passport_number": "E1450387"})
 
         #SEAT
         for row in range(1, 4):

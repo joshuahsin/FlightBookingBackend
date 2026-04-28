@@ -10,7 +10,7 @@ class PassengerViewSet(viewsets.ModelViewSet):
     serializer_class = PassengerSerializer
 
     def get_permissions(self):
-        if self.action == 'create':
+        if self.action == 'create' or self.action == 'partial_update':
             return [IsUser()]
         if self.action == 'list':
             return [IsUserOrAdmin()]
