@@ -24,7 +24,6 @@ urlpatterns = [
     path('api/', include("booking.urls")),
     path('api/', include("booking_status.urls")),
     path('api/', include("cabin_class.urls")),
-    path('api/', include("cabin_class.urls")),
     path('api/', include("cart.urls")),
     path('api/', include("fare.urls")),
     path('api/', include("flight.urls")),
@@ -33,4 +32,5 @@ urlpatterns = [
     path('api/', include("payment.urls")),
     path('api/', include("seat.urls")),
     path('api/', include("user.urls")),
+    path('api/', include("refund_request.urls")),
 ]

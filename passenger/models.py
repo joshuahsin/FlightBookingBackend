@@ -6,12 +6,9 @@ class Passenger(models.Model):
     first_name = models.CharField(max_length=100, db_index=True)
     last_name = models.CharField(max_length=100, db_index=True)
     date_of_birth = models.DateField()
-    passport_number = models.CharField(max_length=100, null=True, blank=True)
+    GENDER_CHOICES = [('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')]
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
+    passport_number = models.CharField(max_length=100, unique=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['first_name', 'last_name', 'date_of_birth'],
-                name='unique_passenger_first_last_dob',
-            ),
-        ]
+        pass

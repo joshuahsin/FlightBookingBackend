@@ -3,6 +3,7 @@ from datetime import timedelta
 from urllib.parse import unquote
 
 from django.conf import settings
+from django.contrib.auth.hashers import make_password
 from django.core.mail import send_mail
 from django.utils import timezone
 from rest_framework import viewsets, status
@@ -53,15 +54,12 @@ class UserViewSet(viewsets.ModelViewSet):
         PendingRegistration.objects.filter(email=email).delete()
         token = secrets.token_urlsafe(32)
         expires_at = timezone.now() + timedelta(hours=24)
-        print("DATA:", data)
-        print("expires_at:", expires_at)
-        print("token:", token)
         pref = data.get('preferred_contact_method') or None
         PendingRegistration.objects.create(
             email=email,
             token=token,
             username=data['username'],
-            password=data['password'],
+            password=make_password(data['password']),
             first_name=data.get('first_name', ''),
             last_name=data.get('last_name', ''),
             phone_number=data['phone_number'],
@@ -81,7 +79,6 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['GET', 'POST'], permission_classes=[AllowAny])
     def verify_email(self, request):
         """Verify token and create user. Token in body: { \"token\": \"...\" } or query: ?token=..."""
-        print("REQUEST:", request)
         data = getattr(request, 'data', None) or {}
         params = getattr(request, 'query_params', None) or {}
         token = (
@@ -98,29 +95,13 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         token_decoded = unquote(token)
-        # Token from secrets.token_urlsafe(32) is always 43 characters (check after decoding).
-        # Length validation is done here only; frontend should send the token as-is from the URL.
-        EXPECTED_TOKEN_LENGTH = 43
-        if len(token_decoded) != EXPECTED_TOKEN_LENGTH:
-            return Response(
-                {
-                    'detail': f'Verification link appears truncated or invalid. Token must be {EXPECTED_TOKEN_LENGTH} characters (received {len(token_decoded)}). Use the full link from the email.',
-                    'code': 'invalid_token_length',
-                    'expected_length': EXPECTED_TOKEN_LENGTH,
-                    'received_length': len(token_decoded),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         try:
             pending = PendingRegistration.objects.get(token=token_decoded)
         except PendingRegistration.DoesNotExist:
-                payload = {
-                    'detail': 'Invalid or expired link. If you already verified, try signing in.',
-                    'code': 'invalid_token',
-                }
-                if settings.DEBUG:
-                    payload['token_length_received'] = len(token_decoded)
-                return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Invalid or expired link. If you already verified, try signing in.', 'code': 'invalid_token'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if timezone.now() > pending.expires_at:
             pending.delete()
             return Response(
@@ -135,16 +116,17 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         pref = pending.preferred_contact_method or None
         try:
-            User.objects.create_user(
+            user = User(
                 username=pending.username,
                 email=pending.email,
-                password=pending.password,
                 first_name=pending.first_name or '',
                 last_name=pending.last_name or '',
                 phone_number=pending.phone_number,
                 preferred_contact_method=pref,
                 role='user',
             )
+            user.password = pending.password  # already hashed; assign directly to avoid double-hashing
+            user.save()
         except Exception as e:
             return Response(
                 {'detail': f'Could not create account: {str(e)}', 'code': 'create_failed'},
