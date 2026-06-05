@@ -9,3 +9,7 @@ djangorestframework-simplejwt>=5.3.0
 stripe>=8.0.0
 asgiref==3.11.0
 sqlparse==0.5.5
+
+# Testing
+pytest>=7.0.0
+pytest-django>=4.5.0

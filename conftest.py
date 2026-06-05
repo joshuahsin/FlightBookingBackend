@@ -18,6 +18,13 @@ from seat.models import Seat
 from user.models import User
 
 
+@pytest.fixture(autouse=True)
+def use_locmem_cache(settings):
+    settings.CACHES = {
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+
+
 @pytest.fixture
 def api_client():
     return APIClient()
@@ -192,6 +199,7 @@ def passenger2(db):
         first_name='Jane',
         last_name='Doe',
         date_of_birth=date(1992, 6, 15),
+        passport_number='B98765432',
     )
 
 
@@ -201,6 +209,7 @@ def passenger(db):
         first_name='John',
         last_name='Smith',
         date_of_birth=date(1990, 1, 1),
+        passport_number='A12345678',
     )
 
 
