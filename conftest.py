@@ -137,8 +137,18 @@ def booking_status_cancelled(db):
 
 
 @pytest.fixture
-def payment_status_paid(db):
-    return PaymentStatus.objects.create(code='PAID', name='Paid', description='Payment successful', is_terminal=False)
+def payment_status_pending(db):
+    return PaymentStatus.objects.create(code='PENDING', name='Pending', description='Awaiting payment', is_terminal=False)
+
+
+@pytest.fixture
+def payment_status_completed(db):
+    return PaymentStatus.objects.create(code='COMPLETED', name='Completed', description='Payment successful', is_terminal=False)
+
+
+@pytest.fixture
+def payment_status_paid(db, payment_status_completed):
+    return payment_status_completed
 
 
 @pytest.fixture
@@ -272,4 +282,14 @@ def payment(db, paid_order, payment_status_paid):
         amount='500.00',
         stripe_payment_session_id='pi_test_123',
         payment_status=payment_status_paid,
+    )
+
+
+@pytest.fixture
+def pending_payment(db, order, payment_status_pending):
+    return Payment.objects.create(
+        order=order,
+        amount='500.00',
+        stripe_payment_session_id='cs_test_pending123',
+        payment_status=payment_status_pending,
     )

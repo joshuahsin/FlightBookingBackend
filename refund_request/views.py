@@ -76,7 +76,7 @@ class RefundRequestViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Only pending refund requests can be approved.'}, status=status.HTTP_400_BAD_REQUEST)
 
         order = refund_request.order
-        payment = order.payments.select_related('payment_status').filter(payment_status__code='PAID').first()
+        payment = order.payments.select_related('payment_status').filter(payment_status__code='COMPLETED').first()
         if payment is None:
             return Response({'detail': 'No paid payment found for this order.'}, status=status.HTTP_400_BAD_REQUEST)
 

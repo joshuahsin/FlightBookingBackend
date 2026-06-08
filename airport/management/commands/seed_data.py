@@ -38,7 +38,7 @@ class Command(BaseCommand):
         bus, _ = CabinClass.objects.get_or_create(cabin_class_name="Business", defaults={"baggage_allowance": 3, "refundable": True})
 
         #FLIGHTS
-        lga_to_lax, _ = Flight.objects.get_or_create(departure_airport=lga, arrival_airport=lax, departure_date_time="2026-01-16T15:30:00-05:00", defaults={"arrival_date_time": "2026-01-16T18:30:00-08:00"})
+        lga_to_lax, _ = Flight.objects.get_or_create(departure_airport=lga, arrival_airport=lax, departure_date_time="2026-06-06T15:30:00-05:00", defaults={"arrival_date_time": "2026-06-06T18:30:00-08:00"})
         lax_to_lga, _ = Flight.objects.get_or_create(departure_airport=lax, arrival_airport=lga, departure_date_time="2026-01-19T20:30:00-08:00", defaults={"arrival_date_time": "2026-01-19T23:30:00-05:00"})
         den_to_pdx, _ = Flight.objects.get_or_create(departure_airport=den, arrival_airport=pdx, departure_date_time="2026-01-16T13:30:00-06:00", defaults={"arrival_date_time": "2026-01-16T15:30:00-05:00"})
         pdx_to_den, _ = Flight.objects.get_or_create(departure_airport=pdx, arrival_airport=den, departure_date_time="2026-01-18T17:30:00-05:00", defaults={"arrival_date_time": "2026-01-18T19:30:00-06:00"})
@@ -53,28 +53,28 @@ class Command(BaseCommand):
         bus_pdx_to_den_fare, _ = Fare.objects.get_or_create(flight=pdx_to_den, cabin_class=bus, defaults={"fare_price": 500, "seats_available": 10})
 
         #BOOKING STATUS
-        BookingStatus.objects.get_or_create(code="PENDING", defaults={"name": "Pending", "description": "Booking is pending confirmation", "is_terminal": False})
-        confirmed, _ = BookingStatus.objects.get_or_create(code="CONFIRMED", defaults={"name": "Confirmed", "description": "Confirmed booking", "is_terminal": False})
-        checked_in, _ = BookingStatus.objects.get_or_create(code="CHECKED_IN", defaults={"name": "Checked in", "description": "Passenger checked in", "is_terminal": False})
-        BookingStatus.objects.get_or_create(code="BOARDED", defaults={"name": "Boarded", "description": "Plane Boarding Time", "is_terminal": False})
-        BookingStatus.objects.get_or_create(code="COMPLETED", defaults={"name": "Flight Completed", "description": "Flight completed successfully", "is_terminal": True})
-        BookingStatus.objects.get_or_create(code="CANCELLED", defaults={"name": "Cancelled", "description": "Flight was cancelled", "is_terminal": True})
-        BookingStatus.objects.get_or_create(code="REFUNDED", defaults={"name": "Refunded", "description": "Booking was refunded", "is_terminal": True})
-        BookingStatus.objects.get_or_create(code="NO_SHOW", defaults={"name": "No Show", "description": "Passenger did not board", "is_terminal": True})
+        BookingStatus.objects.get_or_create(id = 1, code="PENDING", defaults={"name": "Pending", "description": "Booking is pending confirmation", "is_terminal": False})
+        confirmed, _ = BookingStatus.objects.get_or_create(id = 2, code="CONFIRMED", defaults={"name": "Confirmed", "description": "Confirmed booking", "is_terminal": False})
+        checked_in, _ = BookingStatus.objects.get_or_create(id = 3, code="CHECKED_IN", defaults={"name": "Checked in", "description": "Passenger checked in", "is_terminal": False})
+        BookingStatus.objects.get_or_create(id = 4, code="BOARDED", defaults={"name": "Boarded", "description": "Plane Boarding Time", "is_terminal": False})
+        BookingStatus.objects.get_or_create(id = 5, code="COMPLETED", defaults={"name": "Flight Completed", "description": "Flight completed successfully", "is_terminal": True})
+        BookingStatus.objects.get_or_create(id = 6, code="CANCELLED", defaults={"name": "Cancelled", "description": "Flight was cancelled", "is_terminal": True})
+        BookingStatus.objects.get_or_create(id = 7, code="REFUNDED", defaults={"name": "Refunded", "description": "Booking was refunded", "is_terminal": True})
+        BookingStatus.objects.get_or_create(id = 8, code="NO_SHOW", defaults={"name": "No Show", "description": "Passenger did not board", "is_terminal": True})
 
         #ORDER STATUS
-        order_created, _ = OrderStatus.objects.get_or_create(code="CREATED", defaults={"name": "Created", "description": "Created", "is_terminal": False})
-        order_paid, _ = OrderStatus.objects.get_or_create(code="PAID", defaults={"name": "Paid", "description": "Paid", "is_terminal": False})
-        OrderStatus.objects.get_or_create(code="FAILED", defaults={"name": "Failed", "description": "Failed", "is_terminal": True})
-        order_cancelled, _ = OrderStatus.objects.get_or_create(code="CANCELLED", defaults={"name": "Cancelled", "description": "Cancelled", "is_terminal": True})
-        OrderStatus.objects.get_or_create(code="PARTIALLY_REFUNDED", defaults={"name": "Partially Refunded", "description": "Partially Refunded", "is_terminal": True})
-        OrderStatus.objects.get_or_create(code="REFUNDED", defaults={"name": "Refunded", "description": "Refunded", "is_terminal": True})
+        order_created, _ = OrderStatus.objects.get_or_create(id=1, code="CREATED", defaults={"name": "Created", "description": "Created", "is_terminal": False})
+        order_paid, _ = OrderStatus.objects.get_or_create(id=2, code="PAID", defaults={"name": "Paid", "description": "Paid", "is_terminal": False})
+        OrderStatus.objects.get_or_create(id=3, code="FAILED", defaults={"name": "Failed", "description": "Failed", "is_terminal": True})
+        order_cancelled, _ = OrderStatus.objects.get_or_create(id=4, code="CANCELLED", defaults={"name": "Cancelled", "description": "Cancelled", "is_terminal": True})
+        OrderStatus.objects.get_or_create(id=5, code="PARTIALLY_REFUNDED", defaults={"name": "Partially Refunded", "description": "Partially Refunded", "is_terminal": True})
+        OrderStatus.objects.get_or_create(id=6, code="REFUNDED", defaults={"name": "Refunded", "description": "Refunded", "is_terminal": True})
 
         #PAYMENT STATUS
-        PaymentStatus.objects.get_or_create(code="PENDING", defaults={"name": "Pending", "description": "Payment Processing", "is_terminal": False})
-        complete_payment, _ = PaymentStatus.objects.get_or_create(code="COMPLETED", defaults={"name": "Completed", "description": "Payment Completed Successfully", "is_terminal": False})
-        PaymentStatus.objects.get_or_create(code="FAILED", defaults={"name": "Failed", "description": "Payment Failed", "is_terminal": True})
-        PaymentStatus.objects.get_or_create(code="REFUNDED", defaults={"name": "Refunded", "description": "Payment Refunded", "is_terminal": True})
+        PaymentStatus.objects.get_or_create(id = 1, code="PENDING", defaults={"name": "Pending", "description": "Payment Processing", "is_terminal": False})
+        complete_payment, _ = PaymentStatus.objects.get_or_create(id = 2, code="COMPLETED", defaults={"name": "Completed", "description": "Payment Completed Successfully", "is_terminal": False})
+        PaymentStatus.objects.get_or_create(id = 3, code="FAILED", defaults={"name": "Failed", "description": "Payment Failed", "is_terminal": True})
+        PaymentStatus.objects.get_or_create(id = 4, code="REFUNDED", defaults={"name": "Refunded", "description": "Payment Refunded", "is_terminal": True})
 
         #USER
         josh, created = User.objects.get_or_create(username="josh1234", defaults={"role": "user", "first_name": "Joshua", "last_name": "Hsin", "email": "jhsin1@uci.edu", "phone_number": "+19112345679", "preferred_contact_method": "email"})
@@ -126,16 +126,16 @@ class Command(BaseCommand):
         george_order, _ = Order.objects.get_or_create(confirmation_number="GEO01", defaults={"user": george, "order_status": order_paid, "total_amount": 846.34})
 
         #BOOKING
-        Booking.objects.get_or_create(order=josh_order, flight=den_to_pdx, passenger=josh_passenger, defaults={"seat": den_eco_seat1, "booking_status": checked_in})
-        Booking.objects.get_or_create(order=josh_order, flight=den_to_pdx, passenger=kelly_passenger, defaults={"seat": den_eco_seat2, "booking_status": checked_in})
-        Booking.objects.get_or_create(order=george_order, flight=lga_to_lax, passenger=george_passenger, defaults={"seat": lga_eco_seat1, "booking_status": confirmed})
-        Booking.objects.get_or_create(order=george_order, flight=lga_to_lax, passenger=kevin_passenger, defaults={"seat": lga_eco_seat2, "booking_status": confirmed})
+        Booking.objects.get_or_create(flight=den_to_pdx, passenger=josh_passenger, defaults={"order": josh_order, "seat": den_eco_seat1, "booking_status": checked_in})
+        Booking.objects.get_or_create(flight=den_to_pdx, passenger=kelly_passenger, defaults={"order": josh_order, "seat": den_eco_seat2, "booking_status": checked_in})
+        Booking.objects.get_or_create(flight=lga_to_lax, passenger=george_passenger, defaults={"order": george_order, "seat": lga_eco_seat1, "booking_status": confirmed})
+        Booking.objects.get_or_create(flight=lga_to_lax, passenger=kevin_passenger, defaults={"order": george_order, "seat": lga_eco_seat2, "booking_status": confirmed})
 
         #PAYMENT
         Payment.objects.get_or_create(stripe_payment_session_id="cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6", defaults={"order": josh_order, "amount": 536.43, "payment_status": complete_payment})
         Payment.objects.get_or_create(stripe_payment_session_id="cs_test_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z7", defaults={"order": george_order, "amount": 846.34, "payment_status": complete_payment})
 
         #CART
-        Cart.objects.get_or_create(user=john, defaults={"is_active": True, "departure_flight": den_to_pdx, "return_flight": pdx_to_den, "departure_fare": bus_den_to_pdx_fare, "return_fare": bus_pdx_to_den_fare})
+        Cart.objects.get_or_create(user=john, defaults={"departure_flight": den_to_pdx, "return_flight": pdx_to_den, "departure_fare": bus_den_to_pdx_fare, "return_fare": bus_pdx_to_den_fare})
 
         print("Successfully seeded all objects!")
