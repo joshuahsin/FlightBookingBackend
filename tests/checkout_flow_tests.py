@@ -265,16 +265,16 @@ class TestPaymentCreate:
 
 @pytest.mark.django_db
 class TestStripeWebhook:
-    def _build_event(self, event_type, payment_intent_id):
+    def _build_event(self, event_type, session_id, payment_status='paid'):
         return {
             'type': event_type,
-            'data': {'object': {'id': payment_intent_id}},
+            'data': {'object': {'id': session_id, 'payment_status': payment_status}},
         }
 
     def test_webhook_payment_succeeded(
-        self, api_client, payment, order_status_paid, booking_status_confirmed, payment_status_paid
+        self, api_client, pending_payment, order_status_paid, booking_status_confirmed, payment_status_paid
     ):
-        event = self._build_event('payment_intent.succeeded', payment.stripe_payment_session_id)
+        event = self._build_event('checkout.session.completed', pending_payment.stripe_payment_session_id)
         with patch('payment.views.stripe.Webhook.construct_event', return_value=event):
             response = api_client.post(
                 '/api/payment/webhook/',
@@ -283,13 +283,15 @@ class TestStripeWebhook:
                 HTTP_STRIPE_SIGNATURE='sig_test',
             )
         assert response.status_code == 200
-        payment.order.refresh_from_db()
-        assert payment.order.order_status.code == 'PAID'
+        pending_payment.refresh_from_db()
+        assert pending_payment.payment_status.code == 'COMPLETED'
+        pending_payment.order.refresh_from_db()
+        assert pending_payment.order.order_status.code == 'PAID'
 
     def test_webhook_payment_failed(
         self, api_client, payment, order_status_failed, payment_status_failed
     ):
-        event = self._build_event('payment_intent.payment_failed', payment.stripe_payment_session_id)
+        event = self._build_event('checkout.session.expired', payment.stripe_payment_session_id)
         with patch('payment.views.stripe.Webhook.construct_event', return_value=event):
             response = api_client.post(
                 '/api/payment/webhook/',

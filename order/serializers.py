@@ -22,6 +22,7 @@ class OrderBookingLineSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
     )
+    fare_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default='0.00')
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -90,6 +91,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 passenger=passenger,
                 seat=seat,
                 booking_status=booking_status,
+                fare_price=line.get('fare_price', '0.00'),
             )
             Seat.objects.filter(pk=seat.pk).update(occupied=True)
         return order

@@ -4,8 +4,10 @@ from django.core.cache import cache
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from booking_status.models import BookingStatus
@@ -97,6 +99,22 @@ class PaymentViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         raise PermissionDenied("Orders cannot be deleted for archive purposes.")
 
+    @action(detail=False, methods=['get'], url_path='verify-session', permission_classes=[AllowAny])
+    def verify_session(self, request):
+        """Return payment status for a given Stripe payment intent ID."""
+        session_id = request.query_params.get('session_id')
+        if not session_id:
+            return Response({'detail': 'session_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        payment = (
+            Payment.objects
+            .select_related('payment_status', 'order__order_status')
+            .filter(stripe_payment_session_id=session_id)
+            .first()
+        )
+        if payment is None:
+            return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(PaymentSerializer(payment).data)
+
 
 @csrf_exempt
 @require_POST
@@ -111,16 +129,20 @@ def stripe_webhook(request):
     except (ValueError, stripe.error.SignatureVerificationError):
         return HttpResponse(status=400)
 
-    if event['type'] == 'payment_intent.succeeded':
-        _handle_payment_succeeded(event['data']['object'])
-    elif event['type'] == 'payment_intent.payment_failed':
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        if session['payment_status'] == 'paid':
+            _handle_payment_succeeded(session)
+        else:
+            _handle_payment_failed(session)
+    elif event['type'] == 'checkout.session.expired':
         _handle_payment_failed(event['data']['object'])
 
     return HttpResponse(status=200)
 
 
-def _handle_payment_succeeded(payment_intent):
-    session_id = payment_intent['id']
+def _handle_payment_succeeded(session):
+    session_id = session['id']
     payment = (
         Payment.objects
         .select_related('order__order_status')
@@ -130,12 +152,12 @@ def _handle_payment_succeeded(payment_intent):
     if payment is None:
         return
 
-    paid_payment_status = PaymentStatus.objects.filter(code='PAID').first()
+    completed_payment_status = PaymentStatus.objects.filter(code='COMPLETED').first()
     paid_order_status = OrderStatus.objects.filter(code='PAID').first()
     confirmed_booking_status = BookingStatus.objects.filter(code='CONFIRMED').first()
 
-    if paid_payment_status:
-        payment.payment_status = paid_payment_status
+    if completed_payment_status:
+        payment.payment_status = completed_payment_status
         payment.save()
 
     order = payment.order
@@ -152,8 +174,8 @@ def _handle_payment_succeeded(payment_intent):
     cache.delete(_booking_list_cache_key(order.user_id))
 
 
-def _handle_payment_failed(payment_intent):
-    session_id = payment_intent['id']
+def _handle_payment_failed(session):
+    session_id = session['id']
     payment = (
         Payment.objects
         .select_related('order__order_status')
