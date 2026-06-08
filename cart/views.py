@@ -24,7 +24,7 @@ class CartViewSet(viewsets.ModelViewSet):
         return self.request.user.role == "admin"
 
     def get_queryset(self):
-        return Cart.objects.select_related("user").filter(user=self.request.user, is_active=True)
+        return Cart.objects.select_related("user").filter(user=self.request.user)
 
     def list(self, request, *args, **kwargs):
         if request.user.role == "admin":
@@ -51,8 +51,7 @@ class CartViewSet(viewsets.ModelViewSet):
                 "Admin cannot create a cart. Only users with role 'user' can create carts."
             )
 
-        # Deactivate any other active carts so this user has only one active cart
-        Cart.objects.filter(user=self.request.user, is_active=True).update(is_active=False)
+        Cart.objects.filter(user=self.request.user).delete()
 
         serializer.save(user=self.request.user)
         self._invalidate_cart_list_cache(self.request.user.id)
@@ -61,7 +60,7 @@ class CartViewSet(viewsets.ModelViewSet):
         if self.is_admin():
             raise PermissionDenied("Admin cannot update a cart.")
         instance = serializer.instance
-        serializer.save(user=self.request.user, is_active=True, updated_at=timezone.now())
+        serializer.save(user=self.request.user, updated_at=timezone.now())
         self._invalidate_cart_list_cache(instance.user_id)
 
     def perform_destroy(self, instance):

@@ -9,7 +9,6 @@ from fare.models import Fare
 class Cart(models.Model):
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    is_active = models.BooleanField(default=True)
     departure_flight = models.ForeignKey(to=Flight, on_delete=models.CASCADE, related_name='departure_flight')
     return_flight = models.ForeignKey(to=Flight, on_delete=models.CASCADE, null=True, blank=True, related_name='return_flight')
     departure_fare = models.ForeignKey(to=Fare, on_delete=models.CASCADE, related_name='departure_fare')
