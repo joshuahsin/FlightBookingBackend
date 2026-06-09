@@ -1,6 +1,11 @@
 # Flight Buddy — Backend
 
-REST API backend for a flight booking application. Built with Django REST Framework.
+REST API backend for a flight booking application built with Django REST Framework. Stripe is implemented for easy payment services, JWT secures the application, and Redis caches large results supporting the PostGreSQL database. The Frontend of the application is constructed using React.js.
+
+With this application, Users can book flights for themselves and others, looking up round trip or one way flights between a period of time, select seats, select passengers, and complete their payment with Stripe. Additionally, signed in users can view their orders or users without accounts an use their order confirmation to view past flight orders. 
+
+## Frontend
+https://github.com/joshuahsin/flight-booking-app-frontend
 
 ## Tech Stack
 
